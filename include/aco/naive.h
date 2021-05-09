@@ -1,3 +1,8 @@
+#ifndef __aco_naive_h
+#define __aco_naive_h
+
+#pragma once
+
 #include <array>
 #include <cstring>
 #include <cmath>
@@ -49,3 +54,5 @@ namespace aco {
 };
 
 #include "naive.inl"
+
+#endif // __aco_naive_h
