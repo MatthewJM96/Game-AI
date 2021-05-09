@@ -1,6 +1,6 @@
 from csv import reader
-# import matplotlib
-# matplotlib.use("WebAgg")
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.animation as anim
 import matplotlib.pyplot as plt
 import numpy as np
