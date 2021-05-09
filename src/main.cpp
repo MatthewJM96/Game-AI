@@ -1,28 +1,49 @@
 #include <iostream>
-
-const size_t MAP_DIM   = 8;
-const size_t MAX_STEPS = 30;
+#include <fstream>
+#include <string>
 
 #include "aco/naive.h"
-
-const char MAP_1[MAP_DIM * MAP_DIM] = {
-    '0', 'e', '0', '0', '0', '0', '0', '0',
-    '0', '0', 'x', 'x', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0',
-    'x', 'x', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', 'x', 'x', 'x', 'x', '0', '0',
-    '0', 's', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0'
-};
 
 int main() {
     std::cout << "Hello, world!" << std::endl;
 
-    const size_t ant_count = 30;
+    const size_t map_dim   = 51;
+    const size_t max_steps = 400;
+    const size_t ant_count = 5000;
 
-    const float pheromone_increment   = 30.0f; // Local increment (per ant per node) per timestep.
-    const float pheromone_evaporation = 0.02f; // Global decrement on each node per timestep
+    const float pheromone_increment   = map_dim * map_dim; // Local increment (per ant per node) per timestep.
+    const float pheromone_evaporation = 0.01f; // Global decrement on each node per timestep
 
-    aco::naive::do_simulation<MAP_DIM, 30>(&MAP_1[0], ant_count, pheromone_increment, pheromone_evaporation);
+    for (size_t i = 0; i < 20; ++i) {
+        std::string idx = std::to_string(i);
+
+        std::array<char, map_dim * map_dim> map;
+
+        {
+            std::ifstream map_file("maps/25." + idx + ".unsolved.map");
+
+            size_t row = 0;
+            std::string line;
+            while (std::getline(map_file, line)) {
+                for (size_t col = 0; col < map_dim; ++col) {
+                    size_t idx = row * map_dim + col;
+
+                    map[idx] = line[col];
+                }
+
+                ++row;
+            }
+        }
+
+        // for (size_t i = 0; i < map_dim; ++i) {
+        //     for (size_t j = 0; j < map_dim; ++j) {
+        //         size_t idx = i * map_dim + j;
+
+        //         std::cout << map[idx] << " ";
+        //     }
+        //     std::cout << std::endl;
+        // }
+
+        aco::naive::do_simulation<map_dim, max_steps>(idx, 2000, &map[0], ant_count, pheromone_increment, pheromone_evaporation);
+    }
 }

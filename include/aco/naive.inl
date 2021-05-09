@@ -138,7 +138,7 @@ size_t aco::naive::choose_next_node(Ant<MapDim * MapDim, MaxSteps>* ant) {
 }
 
 template <size_t MapDim, size_t MaxSteps>
-void aco::naive::do_simulation(const char* actual_map_ptr, size_t ant_count, float pheromone_increment, float pheromone_evaporation) {
+void aco::naive::do_simulation(std::string tag, size_t iterations, const char* actual_map_ptr, size_t ant_count, float pheromone_increment, float pheromone_evaporation) {
     const size_t MapSize = MapDim * MapDim;
 
     AntColony<MapSize>     ant_colony;
@@ -163,10 +163,9 @@ void aco::naive::do_simulation(const char* actual_map_ptr, size_t ant_count, flo
 
     std::ofstream pheromone_output;
     std::ofstream ants_output;
-    pheromone_output.open("results/pheromone_result.csv");
-    ants_output.open("results/ants_result.csv");
+    pheromone_output.open("results/" + tag + ".naive.pheromone_result.csv");
+    ants_output.open("results/" + tag + ".naive.ants_result.csv");
 
-    size_t iterations = 1000;
     while (iterations-- > 0) {
         // std::cout << std::endl << std::endl;
         // for (size_t i = 0; i < MapSize; ++i) {

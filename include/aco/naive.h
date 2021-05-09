@@ -44,7 +44,7 @@ namespace aco {
         size_t choose_next_node(Ant<MapDim * MapDim, MaxSteps>* ant);
 
         template <size_t MapDim, size_t MaxSteps>
-        void do_simulation(const char* actual_map_ptr, size_t ant_count, float pheromone_increment, float pheromone_evaporation);
+        void do_simulation(std::string tag, size_t iterations, const char* actual_map_ptr, size_t ant_count, float pheromone_increment, float pheromone_evaporation);
     };
 };
 
