@@ -14,16 +14,16 @@ namespace aco {
         std::default_random_engine generator;
 
         template <size_t MapSize>
-        constexpr std::array<float, MapSize> initialisePheromoneMap();
+        constexpr std::array<float, MapSize> initialise_pheromone_map();
 
         template <size_t MapSize>
-        constexpr std::array<uint16_t, MapSize> initialiseAntCountMap();
+        constexpr std::array<uint16_t, MapSize> initialise_ant_count_map();
 
         template <size_t MapSize>
         struct AntColony {
-            std::array<float, MapSize>    pheromone_map = initialisePheromoneMap<MapSize>();
+            std::array<float, MapSize>    pheromone_map = initialise_pheromone_map<MapSize>();
             std::array<char, MapSize>     actual_map;
-            std::array<uint16_t, MapSize> ant_count_map = initialiseAntCountMap<MapSize>();
+            std::array<uint16_t, MapSize> ant_count_map = initialise_ant_count_map<MapSize>();
 
             size_t start_idx;
             size_t end_idx;

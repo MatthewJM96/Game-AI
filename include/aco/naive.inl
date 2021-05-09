@@ -4,7 +4,7 @@
 #include "constants.h"
 
 template <size_t MapSize>
-constexpr std::array<float, MapSize> aco::naive::initialisePheromoneMap() {
+constexpr std::array<float, MapSize> aco::naive::initialise_pheromone_map() {
     std::array<float, MapSize> arr;
 
     for (size_t i = 0; i < MapSize; ++i) arr[i] = 0.0f;
@@ -13,7 +13,7 @@ constexpr std::array<float, MapSize> aco::naive::initialisePheromoneMap() {
 }
 
 template <size_t MapSize>
-constexpr std::array<uint16_t, MapSize> aco::naive::initialiseAntCountMap() {
+constexpr std::array<uint16_t, MapSize> aco::naive::initialise_ant_count_map() {
     std::array<uint16_t, MapSize> arr;
 
     for (size_t i = 0; i < MapSize; ++i) arr[i] = 0;
