@@ -142,7 +142,7 @@ void aco::naive::do_simulation(std::string tag, size_t iterations, const char* a
     const size_t MapSize = MapDim * MapDim;
 
     AntColony<MapSize>     ant_colony;
-    Ant<MapSize, MaxSteps> ants[ant_count];
+    Ant<MapSize, MaxSteps>* ants = new Ant<MapSize, MaxSteps>[ant_count];
 
     std::memcpy(&ant_colony.actual_map[0], actual_map_ptr, MapSize);
 
