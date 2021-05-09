@@ -39,7 +39,7 @@ size_t aco::naive::choose_next_node(Ant<MapDim * MapDim, MaxSteps>* ant) {
         if (ant->steps_taken > 0 && idx == ant->previous_node_indices[ant->steps_taken - 1]) return;
 
         // If node is not actually valid to step onto, then it is not a valid candidate.
-        if (actual_map[idx] != 'x') {
+        if (actual_map[idx] != '#') {
             // Given node is valid to step to, add as a candidate.
 
             // Increment total pheromone level of all candidates.
@@ -147,13 +147,13 @@ void aco::naive::do_simulation(const char* actual_map_ptr, size_t ant_count, flo
     std::memcpy(&ant_colony.actual_map[0], actual_map_ptr, MapSize);
 
     for (size_t i = 0; i < MapSize; ++i) {
-        if (ant_colony.actual_map[i] == 's') {
+        if (ant_colony.actual_map[i] == 'S') {
             ant_colony.start_idx = i;
 
             ant_colony.ant_count_map[i] = ant_count;
         }
 
-        if (ant_colony.actual_map[i] == 'e') ant_colony.end_idx = i;
+        if (ant_colony.actual_map[i] == 'E') ant_colony.end_idx = i;
     }
 
     for (size_t i = 0; i < ant_count; ++i) {
@@ -172,10 +172,10 @@ void aco::naive::do_simulation(const char* actual_map_ptr, size_t ant_count, flo
         // for (size_t i = 0; i < MapSize; ++i) {
         //     if (i % MapDim == 0) std::cout << std::endl;
 
-        //     if (ant_colony.actual_map[i] != 'x') {
+        //     if (ant_colony.actual_map[i] != '#') {
         //         std::cout << ant_colony.pheromone_map[i] << " ";
         //     } else {
-        //         std::cout << "x ";
+        //         std::cout << "# ";
         //     }
 
         //     // if (ant_colony.ant_count_map[i] > 0) {
@@ -186,7 +186,7 @@ void aco::naive::do_simulation(const char* actual_map_ptr, size_t ant_count, flo
         // }
 
         for (size_t i = 0; i < MapSize; ++i) {
-            if (ant_colony.actual_map[i] != 'x') {
+            if (ant_colony.actual_map[i] != '#') {
                 pheromone_output << ant_colony.pheromone_map[i];
             } else {
                 pheromone_output << 0.0f;
@@ -197,7 +197,7 @@ void aco::naive::do_simulation(const char* actual_map_ptr, size_t ant_count, flo
         pheromone_output << std::endl;
 
         for (size_t i = 0; i < MapSize; ++i) {
-            if (ant_colony.actual_map[i] != 'x') {
+            if (ant_colony.actual_map[i] != '#') {
                 ants_output << ant_colony.ant_count_map[i];
             } else {
                 ants_output << 0;
@@ -210,7 +210,7 @@ void aco::naive::do_simulation(const char* actual_map_ptr, size_t ant_count, flo
         for (size_t i = 0; i < ant_count; ++i) {
             Ant<MapSize, MaxSteps>* ant = &ants[i];
 
-            if (ant->steps_taken > MAX_STEPS) {
+            if (ant->steps_taken > MaxSteps) {
                 --ant_colony.ant_count_map[ant->current_node_idx];
                 ++ant_colony.ant_count_map[ant_colony.start_idx];
 
@@ -230,7 +230,7 @@ void aco::naive::do_simulation(const char* actual_map_ptr, size_t ant_count, flo
 
                 ant_colony.pheromone_map[next_node_idx] += pheromone_increment / ant->path_length;
 
-                if (ant_colony.actual_map[next_node_idx] == 's') {
+                if (ant_colony.actual_map[next_node_idx] == 'S') {
                     ant->has_food = false;
                     ant->steps_taken = 0;
                 }
@@ -246,7 +246,7 @@ void aco::naive::do_simulation(const char* actual_map_ptr, size_t ant_count, flo
                 ant->current_node_idx = next_node_idx;
                 ant->steps_taken += 1;
 
-                if (ant_colony.actual_map[next_node_idx] == 'e') {
+                if (ant_colony.actual_map[next_node_idx] == 'E') {
                     ant->has_food = true;
                     ant->path_length = ant->steps_taken;
                 }
