@@ -176,7 +176,7 @@ void aco::naive::do_simulation(std::string tag, size_t iterations, const char* a
         //     if (ant_colony.actual_map[i] != WALL_TILE) {
         //         std::cout << ant_colony.pheromone_map[i] << " ";
         //     } else {
-        //         std::cout << "# ";
+        //         std::cout << WALL_TILE << " ";
         //     }
 
         //     // if (ant_colony.ant_count_map[i] > 0) {
