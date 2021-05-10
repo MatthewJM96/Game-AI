@@ -21,20 +21,27 @@ int main() {
         std::array<char, map_dim * map_dim> map;
         std::array<char, (map_dim + 2) * (map_dim + 2)> halo_map;
 
+        // Initialise first and last row of halo map.
+        for (size_t i = 0; i < map_dim + 2; ++i) {
+            halo_map[i] = '#';
+            halo_map[(map_dim + 2) * (map_dim + 1) + i] = '#';
+        }
+
         {
             std::ifstream map_file("maps/25." + idx + ".unsolved.map");
 
             size_t row = 0;
             std::string line;
             while (std::getline(map_file, line)) {
-                halo_map[row * map_dim]           = WALL_TILE;
-                halo_map[(row + 1) * map_dim - 1] = WALL_TILE;
+                halo_map[(row + 1) * (map_dim + 2)] = WALL_TILE;
+                halo_map[(row + 2) * (map_dim + 2) - 1] = WALL_TILE;
 
                 for (size_t col = 0; col < map_dim; ++col) {
                     size_t idx = row * map_dim + col;
+                    size_t halo_idx = (row + 1) * (map_dim + 2) + col + 1;
 
-                         map[idx]     = line[col];
-                    halo_map[idx + 1] = line[col];
+                         map[idx]      = line[col];
+                    halo_map[halo_idx] = line[col];
                 }
 
                 ++row;
