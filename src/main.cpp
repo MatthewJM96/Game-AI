@@ -4,6 +4,7 @@
 
 #include "aco/naive.h"
 #include "aco/halo.h"
+#include "aco/acs.h"
 
 int main() {
     std::cout << "Hello, world!" << std::endl;
@@ -12,10 +13,11 @@ int main() {
     const size_t max_steps = 400;
     const size_t ant_count = 5000;
 
-    const float pheromone_increment   = map_dim * map_dim; // Local increment (per ant per node) per timestep.
-    const float pheromone_evaporation = 0.01f; // Global decrement on each node per timestep
+    const float global_pheromone_increment = 2 * map_dim * map_dim; // Global increment (best ant in round or all rounds).
+    const float pheromone_increment        = map_dim * map_dim; // Local increment (per ant per node) per timestep.
+    const float pheromone_evaporation      = 0.01f; // Global decrement on each node per timestep
 
-    for (size_t i = 0; i < 20; ++i) {
+    for (size_t i = 0; i < 1; ++i) {
         std::string idx = std::to_string(i);
 
         std::array<char, map_dim * map_dim> map;
@@ -68,7 +70,8 @@ int main() {
             std::cout << std::endl;
         }
 
-        aco::naive::do_simulation<map_dim, max_steps>(idx, 2000, &map[0],      ant_count, pheromone_increment, pheromone_evaporation);
-        aco::halo:: do_simulation<map_dim, max_steps>(idx, 2000, &halo_map[0], ant_count, pheromone_increment, pheromone_evaporation);
+        // aco::naive::do_simulation<map_dim, max_steps>(idx, 2000, &map[0],      ant_count, pheromone_increment, pheromone_evaporation);
+        // aco::halo:: do_simulation<map_dim, max_steps>(idx, 2000, &halo_map[0], ant_count, pheromone_increment, pheromone_evaporation);
+        aco::acs::  do_simulation<map_dim, max_steps>(idx, 20, &halo_map[0], ant_count, pheromone_increment, global_pheromone_increment, pheromone_evaporation);
     }
 }
