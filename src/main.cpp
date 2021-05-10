@@ -48,16 +48,27 @@ int main() {
             }
         }
 
-        // for (size_t i = 0; i < map_dim; ++i) {
-        //     for (size_t j = 0; j < map_dim; ++j) {
-        //         size_t idx = i * map_dim + j;
+        for (size_t i = 0; i < map_dim; ++i) {
+            for (size_t j = 0; j < map_dim; ++j) {
+                size_t idx = i * map_dim + j;
 
-        //         std::cout << map[idx] << " ";
-        //     }
-        //     std::cout << std::endl;
-        // }
+                std::cout << map[idx] << " ";
+            }
+            std::cout << std::endl;
+        }
 
-        aco::naive::do_simulation<map_dim, max_steps>(idx, 2000, &map[0], ant_count, pheromone_increment, pheromone_evaporation);
-         aco::halo::do_simulation<map_dim, max_steps>(idx, 2000, &halo_map[0], ant_count, pheromone_increment, pheromone_evaporation);
+        std::cout << std::endl << std::endl << std::endl;
+
+        for (size_t i = 0; i < map_dim + 2; ++i) {
+            for (size_t j = 0; j < map_dim + 2; ++j) {
+                size_t idx = i * (map_dim + 2) + j;
+
+                std::cout << halo_map[idx] << " ";
+            }
+            std::cout << std::endl;
+        }
+
+        aco::naive::do_simulation<map_dim, max_steps>(idx, 2000, &map[0],      ant_count, pheromone_increment, pheromone_evaporation);
+        aco::halo:: do_simulation<map_dim, max_steps>(idx, 2000, &halo_map[0], ant_count, pheromone_increment, pheromone_evaporation);
     }
 }
