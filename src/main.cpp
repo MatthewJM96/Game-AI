@@ -3,6 +3,7 @@
 #include <string>
 
 #include "aco/naive.h"
+#include "aco/halo.h"
 
 int main() {
     std::cout << "Hello, world!" << std::endl;
@@ -18,6 +19,7 @@ int main() {
         std::string idx = std::to_string(i);
 
         std::array<char, map_dim * map_dim> map;
+        std::array<char, (map_dim + 2) * (map_dim + 2)> halo_map;
 
         {
             std::ifstream map_file("maps/25." + idx + ".unsolved.map");
@@ -25,10 +27,14 @@ int main() {
             size_t row = 0;
             std::string line;
             while (std::getline(map_file, line)) {
+                halo_map[row * map_dim]           = WALL_TILE;
+                halo_map[(row + 1) * map_dim - 1] = WALL_TILE;
+
                 for (size_t col = 0; col < map_dim; ++col) {
                     size_t idx = row * map_dim + col;
 
-                    map[idx] = line[col];
+                         map[idx]     = line[col];
+                    halo_map[idx + 1] = line[col];
                 }
 
                 ++row;
@@ -45,5 +51,6 @@ int main() {
         // }
 
         aco::naive::do_simulation<map_dim, max_steps>(idx, 2000, &map[0], ant_count, pheromone_increment, pheromone_evaporation);
+         aco::halo::do_simulation<map_dim, max_steps>(idx, 2000, &halo_map[0], ant_count, pheromone_increment, pheromone_evaporation);
     }
 }
