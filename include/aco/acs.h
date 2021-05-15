@@ -50,21 +50,34 @@ namespace aco {
             size_t path_length = 0;
         };
 
-        template <size_t MapDim>
-        constexpr void zero_halo_of_pheromone_map(AntColony<dim_to_size(MapDim)>* ant_colony);
+        struct ACSOptions {
+            size_t iterations;
+            size_t ant_count;
+            float  exploitation_factor;
+            float  cost_exponent;
+            struct {
+                float increment;
+                float evaporation;
+            } local, global;
+        };
+
+        template <size_t MapSize>
+        void get_start_and_end_locations(AntColony<MapSize>* ant_colony, size_t ant_count);
+
+        template <size_t MapSize, size_t MaxSteps>
+        void prepare_ants(Ant<MapSize, MaxSteps>* ants, size_t ant_count, AntColony<MapSize>* ant_colony);
+
+        template <size_t MapSize>
+        void print_to_file(std::ofstream& file, AntColony<MapSize>* ant_colony, float (*value_for_idx)(size_t idx, AntColony<MapSize>* ant_colony));
 
         template <size_t MapDim, size_t MaxSteps>
-        size_t choose_next_node(Ant<dim_to_size(MapDim), MaxSteps>* ant);
+        size_t choose_next_node(Ant<dim_to_size(MapDim), MaxSteps>* ant, float exploitation_factor, float(*to_node_cost)(size_t initial, size_t final), float cost_exponent);
 
         template <size_t MapDim, size_t MaxSteps>
         void do_simulation(
             std::string tag,
-            size_t iterations,
             const char* actual_map_ptr,
-            size_t ant_count,
-            float local_pheromone_increment,
-            float global_pheromone_increment,
-            float pheromone_evaporation
+            ACSOptions  options
         );
     };
 };
