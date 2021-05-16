@@ -5,6 +5,7 @@
 
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/graphviz.hpp>
 
 #include "constants.h"
 
@@ -13,14 +14,6 @@
 #include "aco/naive.h"
 #include "aco/halo.h"
 #include "aco/acs.h"
-
-enum vertex_map_idx_t {
-    vertex_map_idx
-};
-
-namespace boost {
-BOOST_INSTALL_PROPERTY(vertex, map_idx);
-};
 
 int main() {
     std::cout << "Hello, world!" << std::endl;
@@ -89,6 +82,12 @@ int main() {
                         << weight_map[*e_it_2.first]
                         << std::endl;
         }
+
+
+        map::maze2d::GraphMap graph_map = map::maze2d::map_to_graph<>(halo_map, 1.0f);
+
+        auto graph_out = std::ofstream("graph_out.txt");
+        boost::write_graphviz(graph_out, graph_map.graph);
 
         // std::pair<EdgeDescriptor, bool> e = boost::edge(0, 2, g);
         // std::pair<EdgeDescriptor, bool> e2 = boost::edge(2, 0, g);
