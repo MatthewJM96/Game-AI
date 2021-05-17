@@ -88,7 +88,7 @@ void map::maze2d::print_map(const Map<MapX, MapY>& map) {
         std::cout << "\n";
     }
 
-    std::cout << std::endl;
+    std::cout << "\n";
 }
 
 template <size_t MapX, size_t MapY, bool MapHasHalo>
@@ -104,8 +104,12 @@ template <size_t MapX, size_t MapY>
 map::maze2d::GraphMap map::maze2d::impl::halo_map_to_graph(Map<MapX, MapY> map, float initial_weight) {
     GraphMap graph_map;
 
-    graph_map.edge_weight_map       = get(boost::edge_weight, graph_map.graph);
-    graph_map.vertex_to_map_idx_map = get(vertex_map_idx,     graph_map.graph);
+    graph_map.start_idx  = map.start_idx;
+    graph_map.finish_idx = map.finish_idx;
+
+    graph_map.vertex_to_tile_char_map = get(vertex_tile_char,   graph_map.graph);
+    graph_map.edge_weight_map         = get(boost::edge_weight, graph_map.graph);
+    graph_map.vertex_to_map_idx_map   = get(vertex_map_idx,     graph_map.graph);
 
     std::unordered_map<size_t, bool> nodes_visited;
 
@@ -138,6 +142,7 @@ map::maze2d::GraphMap map::maze2d::impl::halo_map_to_graph(Map<MapX, MapY> map, 
         if (e_o_to_t_made) graph_map.edge_weight_map[e_o_to_t] = initial_weight;
         if (e_t_to_o_made) graph_map.edge_weight_map[e_t_to_o] = initial_weight;
 
+        graph_map.vertex_to_tile_char_map[v_target]  = map.map[target_node];
         graph_map.vertex_to_map_idx_map[v_target]    = target_node;
         graph_map.map_idx_to_vertex_map[target_node] = v_target;
 
@@ -146,6 +151,7 @@ map::maze2d::GraphMap map::maze2d::impl::halo_map_to_graph(Map<MapX, MapY> map, 
     };
 
     VertexDescriptor origin = boost::add_vertex(graph_map.graph);
+    graph_map.vertex_to_tile_char_map[origin]      = START_TILE;
     graph_map.vertex_to_map_idx_map[origin]        = map.start_idx;
     graph_map.map_idx_to_vertex_map[map.start_idx] = origin;
 
