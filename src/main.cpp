@@ -14,13 +14,14 @@
 #include "aco/naive.h"
 #include "aco/halo.h"
 #include "aco/acs.h"
+#include "aco/acs_graph.h"
 
 int main() {
     std::cout << "Hello, world!" << std::endl;
 
     const size_t map_dim   = 51;
-    const size_t max_steps = 400;
-    const size_t ant_count = 200;
+    const size_t max_steps = 200;
+    const size_t ant_count = 800;
 
     const float global_pheromone_increment   = map_dim * map_dim; // Global increment (best ant in round or all rounds).
     const float global_pheromone_evaporation = 0.1f; // Global decrement on each node per round.
@@ -87,7 +88,8 @@ int main() {
         map::maze2d::GraphMap graph_map = map::maze2d::map_to_graph<>(halo_map, 1.0f);
 
         auto graph_out = std::ofstream("graph_out.txt");
-        boost::write_graphviz(graph_out, graph_map.graph);
+        // boost::write_graphviz(graph_out, graph_map.graph);
+
 
         // std::pair<EdgeDescriptor, bool> e = boost::edge(0, 2, g);
         // std::pair<EdgeDescriptor, bool> e2 = boost::edge(2, 0, g);
@@ -97,20 +99,22 @@ int main() {
         // std::cout << "Graph edge (0, 2) score: " << weightmap[e.first] << std::endl;
         // std::cout << "Graph edge (2, 0) score: " << weightmap[e2.first] << std::endl;
 
-        // aco::acs::ACSOptions options {
-        //     40,
-        //     ant_count,
-        //     exploitation_factor,
-        //     cost_exponent,
-        //     {
-        //         pheromone_increment,
-        //         pheromone_evaporation
-        //     },
-        //     {
-        //         global_pheromone_increment,
-        //         global_pheromone_evaporation
-        //     }
-        // };
+        aco::acs_graph::ACSOptions options {
+            10,
+            ant_count,
+            exploitation_factor,
+            cost_exponent,
+            {
+                pheromone_increment,
+                pheromone_evaporation
+            },
+            {
+                global_pheromone_increment,
+                global_pheromone_evaporation
+            }
+        };
+
+        aco::acs_graph::do_simulation<map_dim, max_steps>(idx, graph_map, options);
 
         // aco::acs::do_simulation<map_dim, max_steps>(idx, &halo_map[0], options);
     }

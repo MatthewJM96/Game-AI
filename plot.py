@@ -22,7 +22,7 @@ def plot_graph(data_source: str, output: str):
 
     results_as_matrix = []
     for result in results:
-        results_as_matrix.append(np.reshape(result, (51, 51)))
+        results_as_matrix.append(np.reshape(result, (53, 53)))
 
     fig = plt.figure()
     ax = sns.heatmap(results_as_matrix[0], vmin=0, vmax=200)
