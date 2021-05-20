@@ -97,10 +97,7 @@ size_t aco::acs_graph::choose_next_node(Ant<dimension::dim2d_to_padded_size(MapD
     // next vertices for the ant to move to.
     VertexDescriptor current_vertex = actual_map->map_idx_to_vertex_map[current_node_idx];
     for (EdgeDescriptor edge : boost::make_iterator_range(boost::out_edges(current_vertex, actual_map->graph))) {
-        VertexDescriptor source = boost::source(edge, actual_map->graph);
-        VertexDescriptor target = boost::target(edge, actual_map->graph);
-
-        VertexDescriptor candidate_vertex = current_vertex == source ? target : source;
+        VertexDescriptor candidate_vertex = boost::target(edge, actual_map->graph);
 
         do_next_node_check(edge, current_vertex, candidate_vertex);
     }
