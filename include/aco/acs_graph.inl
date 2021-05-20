@@ -180,6 +180,17 @@ void aco::acs_graph::do_simulation(
 
     size_t iteration = options.iterations;
     while (iteration > 0) {
+        // if (iteration != options.iterations) {
+        //     std::cout << "Iteration " << options.iterations - iteration << ":\n";
+        //     for (auto edge : boost::make_iterator_range(boost::out_edges(ant_colony.actual_map.map_idx_to_vertex_map[ant_colony.actual_map.start_idx], ant_colony.actual_map.graph))) {
+        //         VertexDescriptor source = boost::source(edge, ant_colony.actual_map.graph);
+        //         VertexDescriptor target = boost::target(edge, ant_colony.actual_map.graph);
+
+        //         std::cout << "    Edge weight (" << source << ", " << target << "): " << ant_colony.actual_map.edge_weight_map[edge] << "\n";
+        //     }
+        //     std::cout << std::endl;
+        // }
+
         for (size_t i = 0; i < options.ant_count; ++i) {
             --ant_colony.ant_count_map[ants[i].current_node_idx];
             ++ant_colony.ant_count_map[ant_colony.actual_map.start_idx];
