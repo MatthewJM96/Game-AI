@@ -34,13 +34,13 @@ int main() {
     for (size_t i = 0; i < 1; ++i) {
         std::string idx = std::to_string(i);
 
-        map::maze2d::Map<map_dim> map;
+        // map::maze2d::Map<map_dim> map;
         map::maze2d::Map<map_dim + 2> halo_map;
 
-        map      = map::maze2d::load_map<map_dim>("maps/15." + idx + ".unsolved.map");
+        // map      = map::maze2d::load_map<map_dim>("maps/15." + idx + ".unsolved.map");
         halo_map = map::maze2d::load_map_with_halo<map_dim>("maps/15." + idx + ".unsolved.map");
 
-        map::maze2d::print_map<map_dim>(map);
+        // map::maze2d::print_map<map_dim>(map);
         map::maze2d::print_map<map_dim + 2>(halo_map);
 
         map::maze2d::GraphMap graph_map = map::maze2d::map_to_graph<>(halo_map, 1.0f);
