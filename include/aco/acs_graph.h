@@ -67,7 +67,7 @@ namespace aco {
         void print_to_file(std::ofstream& file, AntColony<MapSize>* ant_colony, float (*value_for_idx)(size_t idx, AntColony<MapSize>* ant_colony));
 
         template <size_t MapDim, size_t MaxSteps>
-        size_t choose_next_node(Ant<dimension::dim2d_to_padded_size(MapDim), MaxSteps>* ant, float exploitation_factor, float(*to_node_cost)(size_t initial, size_t final), float cost_exponent);
+        size_t choose_next_node(Ant<dimension::dim2d_to_padded_size(MapDim), MaxSteps>* ant, float exploitation_factor, float(*to_node_cost)(VertexDescriptor initial, VertexDescriptor final), float cost_exponent);
 
         template <size_t MapDim, size_t MaxSteps>
         void do_simulation(

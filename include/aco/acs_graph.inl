@@ -46,11 +46,11 @@ void aco::acs_graph::print_to_file(std::ofstream& file, AntColony<MapSize>* ant_
 }
 
 template <size_t MapDim, size_t MaxSteps>
-size_t aco::acs_graph::choose_next_node(Ant<dimension::dim2d_to_padded_size(MapDim), MaxSteps>* ant, float exploitation_factor, float(*to_node_cost)(size_t initial, size_t final), float cost_exponent) {
+size_t aco::acs_graph::choose_next_node(Ant<dimension::dim2d_to_padded_size(MapDim), MaxSteps>* ant, float exploitation_factor, float(*to_node_cost)(VertexDescriptor initial, VertexDescriptor final), float cost_exponent) {
     size_t padded_dim = dimension::dim2d_to_padded_size(MapDim);
 
-    size_t best_option = 0;
-    float  best_option_score = -1000000.0f;
+    VertexDescriptor best_option       = 0;
+    float            best_option_score = -1000000.0f;
 
     float total_score = 0.0f;
     float cumulative_scores[8] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
@@ -66,19 +66,16 @@ size_t aco::acs_graph::choose_next_node(Ant<dimension::dim2d_to_padded_size(MapD
 
     size_t cumulation_idx = 0;
 
-    auto do_next_node_check = [&](size_t idx) {
-        // If the node being checked was where the ant came from, it is not a valid candidate.
-        if (ant->steps_taken > 0 && idx == ant->previous_node_indices[ant->steps_taken - 1]) return;
-
+    auto do_next_node_check = [&](EdgeDescriptor edge, VertexDescriptor initial_vertex, VertexDescriptor candidate_vertex) {
         // If node is not actually valid to step onto, then it is not a valid candidate.
-        if (actual_map->vertex_to_tile_char_map[actual_map->map_idx_to_vertex_map[idx]] == WALL_TILE) return;
+        if (actual_map->vertex_to_tile_char_map[candidate_vertex] == WALL_TILE) return;
 
         // Given node is valid to step to, add as a candidate.
-        float score = pheromone_map[idx] / std::pow(to_node_cost(current_node_idx, idx), cost_exponent);
+        float score = actual_map->edge_weight_map[edge] / std::pow(to_node_cost(initial_vertex, candidate_vertex), cost_exponent);
 
         // If this node has the best score so far, set it as best option.
         if (score > best_option_score) {
-            best_option = idx;
+            best_option       = candidate_vertex;
             best_option_score = score;
         }
 
@@ -90,7 +87,7 @@ size_t aco::acs_graph::choose_next_node(Ant<dimension::dim2d_to_padded_size(MapD
         if (cumulation_idx > 0) cumulative_scores[cumulation_idx] += cumulative_scores[cumulation_idx - 1];
 
         // Add index entry for the candidate node.
-        indices[cumulation_idx] = idx;
+        indices[cumulation_idx] = actual_map->vertex_to_map_idx_map[candidate_vertex];
 
         // Increment cumulation index - its final value being number of candidates found.
         ++cumulation_idx;
@@ -106,7 +103,7 @@ size_t aco::acs_graph::choose_next_node(Ant<dimension::dim2d_to_padded_size(MapD
 
         VertexDescriptor candidate_vertex = current_vertex == source ? target : source;
 
-        do_next_node_check(actual_map->vertex_to_map_idx_map[candidate_vertex]);
+        do_next_node_check(edge, current_vertex, candidate_vertex);
     }
 
     // If no candidates are found, then just go back to where we were.
@@ -117,7 +114,7 @@ size_t aco::acs_graph::choose_next_node(Ant<dimension::dim2d_to_padded_size(MapD
     float exploitation_val = exploitation_distribution(generator);
 
     // If we are to exploit, then this ant will be choosing the best option of its next steps.
-    if (exploitation_val < exploitation_factor) return best_option;
+    if (exploitation_val < exploitation_factor) return actual_map->vertex_to_map_idx_map[best_option];
 
     // If we get here, then this ant is exploring.
 
@@ -243,12 +240,12 @@ void aco::acs_graph::do_simulation(
                     std::tie(edge, edge_exists) = boost::edge(current_vertex, next_vertex, actual_map.graph);
 
                     float increment_by = options.local.increment / ant->path_length;
-                    actual_map.edge_weight_map[edge]        += increment_by;
+                    actual_map.edge_weight_map[edge] += increment_by;
                     ant_colony.pheromone_map[next_node_idx] += increment_by;
 
                     ant->current_node_idx = next_node_idx;
 
-                    if (ant_colony.actual_map.vertex_to_tile_char_map[next_vertex] == START_TILE) {
+                    if (next_node_idx == actual_map.start_idx) {
                         ant->has_food    = false;
                         ant->returned    = true;
                         ant->steps_taken = 0;
@@ -256,7 +253,7 @@ void aco::acs_graph::do_simulation(
                         ++ants_returned;
                     }
                 } else {
-                    size_t next_node_idx = choose_next_node<MapDim, MaxSteps>(ant, iteration == options.iterations ? 0.0f : options.exploitation_factor, [](size_t initial, size_t end) {
+                    size_t next_node_idx = choose_next_node<MapDim, MaxSteps>(ant, iteration == options.iterations ? 0.0f : options.exploitation_factor, [](VertexDescriptor initial, VertexDescriptor end) {
                         return 1.0f;
                     }, options.cost_exponent);
 
@@ -266,10 +263,8 @@ void aco::acs_graph::do_simulation(
                     ant->previous_node_indices[ant->steps_taken] = ant->current_node_idx;
                     ant->current_node_idx = next_node_idx;
                     ant->steps_taken += 1;
-            
-                    VertexDescriptor next_vertex = actual_map.map_idx_to_vertex_map[next_node_idx];
 
-                    if (ant_colony.actual_map.vertex_to_tile_char_map[next_vertex] == END_TILE) {
+                    if (next_node_idx == actual_map.finish_idx) {
                         ant->found_food  = true;
                         ant->has_food    = true;
                         ant->path_length = ant->steps_taken;
@@ -298,7 +293,7 @@ void aco::acs_graph::do_simulation(
                     bool edge_exists;
                     std::tie(edge, edge_exists) = boost::edge(source_vertex, target_vertex, actual_map.graph);
 
-                    actual_map.edge_weight_map[edge]        += increment_by;
+                    actual_map.edge_weight_map[edge] += increment_by;
                 }
                 ant_colony.pheromone_map[shortest_path[i]] += increment_by;
             }
@@ -308,8 +303,6 @@ void aco::acs_graph::do_simulation(
             actual_map.edge_weight_map[edge] *= (1.0f - options.global.evaporation);
         for (size_t i = 0; i < map_size; ++i)
             ant_colony.pheromone_map[i] *= (1.0f - options.global.evaporation);
-
-        // std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
         --iteration;
     }
