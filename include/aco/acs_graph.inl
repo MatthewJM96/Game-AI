@@ -83,8 +83,7 @@ size_t aco::acs_graph::choose_next_node(Ant<dimension::dim2d_to_padded_size(MapD
         total_score += score;
 
         // Add cumulation entry for pheromone level of new candidate.
-        cumulative_scores[cumulation_idx] = score;
-        if (cumulation_idx > 0) cumulative_scores[cumulation_idx] += cumulative_scores[cumulation_idx - 1];
+        cumulative_scores[cumulation_idx] = total_score;
 
         // Add index entry for the candidate node.
         indices[cumulation_idx] = actual_map->vertex_to_map_idx_map[candidate_vertex];
