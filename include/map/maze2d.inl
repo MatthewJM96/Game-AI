@@ -189,7 +189,14 @@ map::maze2d::GraphMap map::maze2d::impl::halo_map_to_graph(Map<MapX, MapY> map, 
 
 template <size_t MapX, size_t MapY>
 map::maze2d::GraphMap map::maze2d::impl::non_halo_map_to_graph(Map<MapX, MapY> map, float initial_weight) {
-    assert(false);
+    GraphMap graph_map;
 
-    return GraphMap{};
+    graph_map.start_idx  = map.start_idx;
+    graph_map.finish_idx = map.finish_idx;
+
+    graph_map.vertex_to_tile_char_map = get(vertex_tile_char,   graph_map.graph);
+    graph_map.edge_weight_map         = get(boost::edge_weight, graph_map.graph);
+    graph_map.vertex_to_map_idx_map   = get(vertex_map_idx,     graph_map.graph);
+
+    return graph_map;
 }
