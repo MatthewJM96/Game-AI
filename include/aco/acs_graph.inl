@@ -3,27 +3,10 @@
 
 #include "constants.h"
 #include "dimension.hpp"
-
-template <size_t MapSize>
-constexpr std::array<float, MapSize> aco::acs_graph::initialise_pheromone_map() {
-    std::array<float, MapSize> arr;
-
-    for (size_t i = 0; i < MapSize; ++i) arr[i] = 0.0f;
-
-    return arr;
-}
-
-template <size_t MapSize>
-constexpr std::array<uint16_t, MapSize> aco::acs_graph::initialise_ant_count_map() {
-    std::array<uint16_t, MapSize> arr;
-
-    for (size_t i = 0; i < MapSize; ++i) arr[i] = 0;
-
-    return arr;
-}
+#include "image.hpp"
 
 template <size_t MapSize, size_t MaxSteps>
-void aco::acs_graph::prepare_ants(Ant<MapSize, MaxSteps>* ants, size_t ant_count, AntColony<MapSize>* ant_colony) {
+void aco::acs_graph::prepare_ants(Ant<MapSize, MaxSteps>* ants, size_t ant_count, AntColony<MapSize, MaxSteps>* ant_colony) {
     for (size_t i = 0; i < ant_count; ++i) {
         ants[i].colony           = ant_colony;
         ants[i].steps_taken      = 0;
@@ -31,18 +14,55 @@ void aco::acs_graph::prepare_ants(Ant<MapSize, MaxSteps>* ants, size_t ant_count
     }
 }
 
-template <size_t MapSize>
-void aco::acs_graph::print_to_file(std::ofstream& file, AntColony<MapSize>* ant_colony, float (*value_for_idx)(size_t idx, AntColony<MapSize>* ant_colony)) {
-    for (size_t i = 0; i < MapSize; ++i) {
-        if (ant_colony->actual_map.vertex_to_tile_char_map[ant_colony->actual_map.map_idx_to_vertex_map[i]] != WALL_TILE) {
-            file << value_for_idx(i, ant_colony);
-        } else {
-            file << 0.0f;
-        }
+template <size_t MapX, size_t MapY, size_t MaxSteps>
+void aco::acs_graph::create_pheromone_heatmap_frame(std::string tag, AntColony<MapX * MapY, MaxSteps>& ant_colony) {
+    heatmap_t* heatmap = heatmap_new(MapX * 10, MapY * 10);
 
-        if (i != MapSize - 1) file << ", ";
+    map::maze2d::GraphMap& map = ant_colony.actual_map;
+
+    for (auto vertex: boost::make_iterator_range(boost::vertices(map.graph))) {
+        float net_pheromone_into_vertex = 0.0f;
+
+        for (auto edge: boost::make_iterator_range(boost::in_edges(vertex, map.graph)))
+            net_pheromone_into_vertex += map.edge_weight_map[edge];
+
+        size_t idx = map.vertex_to_map_idx_map[vertex];
+
+        size_t x_coord = 10 *      (idx % MapX);
+        size_t y_coord = 10 * floor(idx / MapX);
+
+        heatmap_add_weighted_point(heatmap, x_coord, y_coord, net_pheromone_into_vertex);
     }
-    file << "\n";
+
+    uint8_t* image_data = new uint8_t[MapX * 10 * MapY * 10 * 4];
+    heatmap_render_default_to(heatmap, image_data);
+
+    heatmap_free(heatmap);
+
+    image::writepng("results/" + tag + ".png", image_data, MapX * 10, MapY * 10);
+}
+
+template <size_t MapX, size_t MapY, size_t MaxSteps>
+void aco::acs_graph::create_ant_count_heatmap_frame(std::string tag, AntColony<MapX * MapY, MaxSteps>& ant_colony) {
+    heatmap_t* heatmap = heatmap_new(MapX * 10, MapY * 10);
+
+    map::maze2d::GraphMap& map = ant_colony.actual_map;
+
+    for (size_t i = 0; i < ant_colony.ant_count; ++i) {
+        size_t idx = ant_colony.ants[i].current_node_idx;
+
+        size_t x_coord = 10 *      (idx % MapX);
+        size_t y_coord = 10 * floor(idx / MapX);
+
+        heatmap_add_point(heatmap, x_coord, y_coord);
+    }
+
+    uint8_t* image_data = new uint8_t[MapX * 10 * MapY * 10 * 4];
+    heatmap_render_default_to(heatmap, image_data);
+
+    heatmap_free(heatmap);
+
+    image::writepng("results/" + tag + ".png", image_data, MapX * 10, MapY * 10);
 }
 
 template <size_t MapDim, size_t MaxSteps>
@@ -56,7 +76,6 @@ size_t aco::acs_graph::choose_next_node(Ant<dimension::dim2d_to_padded_size(MapD
     float cumulative_scores[8] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
     size_t indices[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
-    float*    pheromone_map = &ant->colony->pheromone_map[0];
     GraphMap* actual_map    = &ant->colony->actual_map;
 
     size_t current_node_idx = ant->current_node_idx;
@@ -118,12 +137,6 @@ size_t aco::acs_graph::choose_next_node(Ant<dimension::dim2d_to_padded_size(MapD
     std::uniform_real_distribution<float> score_distribution(0.0f, total_score);
     float choice_val = score_distribution(generator);
 
-    // std::cout << cumulation_idx << " candidates for ant at " << ant->current_node_idx << std::endl;
-    // std::cout << "Total score = " << total_score << std::endl;
-    // std::cout << "Choice val = " << choice_val << std::endl;
-    // std::cout << "Index by score levels:" << std::endl;
-    // for (size_t i = 0; i < cumulation_idx; ++i) std::cout << "    " << indices[i] << "  -  " << cumulative_scores[i] << std::endl;
-
     // Identify index of next step based on choice val.
     size_t choice_idx = 0;
     for (size_t choice_idx = 0; choice_idx < cumulation_idx; ++choice_idx) {
@@ -143,58 +156,20 @@ void aco::acs_graph::do_simulation(
     /**
      * Critical data points for simulation.
      */
-    AntColony<map_size> ant_colony = {
-        actual_map,
-        initialise_ant_count_map<map_size>(),
-        initialise_pheromone_map<map_size>()
-    };
     Ant<map_size, MaxSteps>* ants = new Ant<map_size, MaxSteps>[options.ant_count];
-
-    /**
-     * Set initial ant count.
-     */
-    ant_colony.ant_count_map[ant_colony.actual_map.start_idx] = options.ant_count;
+    AntColony<map_size, MaxSteps> ant_colony = { actual_map, ants, options.ant_count };
 
     /**
      * Prepare ants for simulation.
      */
     prepare_ants<map_size, MaxSteps>(ants, options.ant_count, &ant_colony);
 
-    /**
-     * Walk vertices and update pheromone map with in_edge degree.
-     */
-    for (auto vertex : boost::make_iterator_range(boost::vertices(ant_colony.actual_map.graph))) {
-        size_t num_edges = boost::in_degree(vertex, ant_colony.actual_map.graph);
-        size_t map_idx   = ant_colony.actual_map.vertex_to_map_idx_map[vertex];
-
-        ant_colony.pheromone_map[map_idx] = (float)num_edges;
-    }
-
-    std::ofstream pheromone_output;
-    std::ofstream ants_output;
-    pheromone_output.open("results/" + tag + ".acs_graph.pheromone_result.csv");
-    ants_output.open("results/" + tag + ".acs_graph.ants_result.csv");
-
     std::array<size_t, MaxSteps> shortest_path        = {};
     long long                    shortest_path_length = -1;
 
     size_t iteration = options.iterations;
     while (iteration > 0) {
-        // if (iteration != options.iterations) {
-        //     std::cout << "Iteration " << options.iterations - iteration << ":\n";
-        //     for (auto edge : boost::make_iterator_range(boost::out_edges(ant_colony.actual_map.map_idx_to_vertex_map[ant_colony.actual_map.start_idx], ant_colony.actual_map.graph))) {
-        //         VertexDescriptor source = boost::source(edge, ant_colony.actual_map.graph);
-        //         VertexDescriptor target = boost::target(edge, ant_colony.actual_map.graph);
-
-        //         std::cout << "    Edge weight (" << source << ", " << target << "): " << ant_colony.actual_map.edge_weight_map[edge] << "\n";
-        //     }
-        //     std::cout << std::endl;
-        // }
-
         for (size_t i = 0; i < options.ant_count; ++i) {
-            --ant_colony.ant_count_map[ants[i].current_node_idx];
-            ++ant_colony.ant_count_map[ant_colony.actual_map.start_idx];
-
             ants[i].steps_taken      = 0;
             ants[i].path_length      = 0;
             ants[i].returned         = false;
@@ -207,13 +182,11 @@ void aco::acs_graph::do_simulation(
         for (size_t step = 0; step < 2 * MaxSteps; ++step) {
             if (ants_returned >= options.ant_count) break;
 
-            print_to_file<map_size>(pheromone_output, &ant_colony, [](size_t idx, AntColony<map_size>* ant_colony) {
-                return ant_colony->pheromone_map[idx] < 0.005f ? 0.0f : ant_colony->pheromone_map[idx];
-            });
-
-            print_to_file<map_size>(ants_output, &ant_colony, [](size_t idx, AntColony<map_size>* ant_colony) {
-                return (float)ant_colony->ant_count_map[idx];
-            });
+            if (step % 10 < 10) {
+                const size_t padded_dim = dimension::dim_to_padded_dim(MapDim);
+                create_pheromone_heatmap_frame<padded_dim, padded_dim, MaxSteps>("pngs/" + std::to_string(options.iterations - iteration + 1) + "." + std::to_string(step + 1) + ".acs_graph.pheromone", ant_colony);
+                create_ant_count_heatmap_frame<padded_dim, padded_dim, MaxSteps>("pngs/" + std::to_string(options.iterations - iteration + 1) + "." + std::to_string(step + 1) + ".acs_graph.ant_count", ant_colony);
+            }
 
             for (size_t ant_idx = 0; ant_idx < options.ant_count; ++ant_idx) {
                 Ant<map_size, MaxSteps>* ant = &ants[ant_idx];
@@ -221,9 +194,6 @@ void aco::acs_graph::do_simulation(
                 if (ant->returned) continue;
 
                 if (ant->steps_taken >= MaxSteps) {
-                    --ant_colony.ant_count_map[ant->current_node_idx];
-                    ++ant_colony.ant_count_map[ant_colony.actual_map.start_idx];
-
                     ant->steps_taken = 0;
                     ant->current_node_idx = ant_colony.actual_map.start_idx;
                     ant->found_food = false;
@@ -237,9 +207,6 @@ void aco::acs_graph::do_simulation(
                     size_t next_node_idx = ant->previous_node_indices[ant->steps_taken - 1];
                     ant->steps_taken -= 1;
 
-                    --ant_colony.ant_count_map[ant->current_node_idx];
-                    ++ant_colony.ant_count_map[next_node_idx];
-
                     // Must use these in reverse order to get the correct edge - ant is headed backwards.
                     VertexDescriptor current_vertex = ant_colony.actual_map.map_idx_to_vertex_map[ant->current_node_idx];
                     VertexDescriptor next_vertex    = ant_colony.actual_map.map_idx_to_vertex_map[next_node_idx];
@@ -247,9 +214,7 @@ void aco::acs_graph::do_simulation(
                     bool edge_exists;
                     std::tie(edge, edge_exists) = boost::edge(next_vertex, current_vertex, ant_colony.actual_map.graph);
 
-                    float increment_by = options.local.increment / ant->path_length;
-                    ant_colony.actual_map.edge_weight_map[edge] += increment_by;
-                    ant_colony.pheromone_map[current_vertex] += increment_by;
+                    ant_colony.actual_map.edge_weight_map[edge] += options.local.increment / ant->path_length;
 
                     ant->current_node_idx = next_node_idx;
 
@@ -264,9 +229,6 @@ void aco::acs_graph::do_simulation(
                     size_t next_node_idx = choose_next_node<MapDim, MaxSteps>(ant, iteration == options.iterations ? 0.0f : options.exploitation_factor, [](VertexDescriptor initial, VertexDescriptor end) {
                         return 1.0f;
                     }, options.cost_exponent);
-
-                    --ant_colony.ant_count_map[ant->current_node_idx];
-                    ++ant_colony.ant_count_map[next_node_idx];
 
                     ant->previous_node_indices[ant->steps_taken] = ant->current_node_idx;
                     ant->current_node_idx = next_node_idx;
@@ -287,34 +249,23 @@ void aco::acs_graph::do_simulation(
 
             for (auto edge : boost::make_iterator_range(boost::edges(ant_colony.actual_map.graph)))
                 ant_colony.actual_map.edge_weight_map[edge] *= (1.0f - options.local.evaporation);
-            for (size_t i = 0; i < map_size; ++i)
-                ant_colony.pheromone_map[i] *= (1.0f - options.local.evaporation);
         }
 
         if (shortest_path_length > 0) {
-            for (size_t i = 0; i < shortest_path_length; ++i) {
-                float increment_by = options.global.increment / shortest_path_length;
-                if (i > 0) {
-                    VertexDescriptor source_vertex = ant_colony.actual_map.map_idx_to_vertex_map[shortest_path[i - 1]];
-                    VertexDescriptor target_vertex = ant_colony.actual_map.map_idx_to_vertex_map[shortest_path[i]];
-                    EdgeDescriptor edge;
-                    bool edge_exists;
-                    std::tie(edge, edge_exists) = boost::edge(source_vertex, target_vertex, ant_colony.actual_map.graph);
+            for (size_t i = 1; i < shortest_path_length; ++i) {
+                VertexDescriptor source_vertex = ant_colony.actual_map.map_idx_to_vertex_map[shortest_path[i - 1]];
+                VertexDescriptor target_vertex = ant_colony.actual_map.map_idx_to_vertex_map[shortest_path[i]];
+                EdgeDescriptor edge;
+                bool edge_exists;
+                std::tie(edge, edge_exists) = boost::edge(source_vertex, target_vertex, ant_colony.actual_map.graph);
 
-                    ant_colony.actual_map.edge_weight_map[edge] += increment_by;
-                }
-                ant_colony.pheromone_map[shortest_path[i]] += increment_by;
+                ant_colony.actual_map.edge_weight_map[edge] += options.global.increment / shortest_path_length;
             }
         }
 
         for (auto edge : boost::make_iterator_range(boost::edges(ant_colony.actual_map.graph)))
             ant_colony.actual_map.edge_weight_map[edge] *= (1.0f - options.global.evaporation);
-        for (size_t i = 0; i < map_size; ++i)
-            ant_colony.pheromone_map[i] *= (1.0f - options.global.evaporation);
 
         --iteration;
     }
-
-    pheromone_output.close();
-    ants_output.close();
 }

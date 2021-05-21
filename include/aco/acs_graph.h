@@ -9,6 +9,8 @@
 #include <cstdint>
 #include <random>
 
+#include <libheatmap/heatmap.h>
+
 #include "dimension.hpp"
 #include "map/maze2d.h"
 
@@ -17,23 +19,19 @@ namespace aco {
         using namespace map::maze2d;
 
         std::default_random_engine generator;
+        template <size_t MapSize, size_t MaxSteps>
+        struct Ant;
 
-        template <size_t MapSize>
-        constexpr std::array<float, MapSize> initialise_pheromone_map();
-
-        template <size_t MapSize>
-        constexpr std::array<uint16_t, MapSize> initialise_ant_count_map();
-
-        template <size_t MapSize>
+        template <size_t MapSize, size_t MaxSteps>
         struct AntColony {
-            GraphMap                      actual_map;
-            std::array<uint16_t, MapSize> ant_count_map;
-            std::array<float,    MapSize> pheromone_map;
+            GraphMap                actual_map;
+            Ant<MapSize, MaxSteps>* ants;
+            size_t                  ant_count;
         };
 
         template <size_t MapSize, size_t MaxSteps>
         struct Ant {
-            AntColony<MapSize>* colony;
+            AntColony<MapSize, MaxSteps>* colony;
 
             bool found_food = false;
             bool has_food   = false;
@@ -61,10 +59,13 @@ namespace aco {
         };
 
         template <size_t MapSize, size_t MaxSteps>
-        void prepare_ants(Ant<MapSize, MaxSteps>* ants, size_t ant_count, AntColony<MapSize>* ant_colony);
+        void prepare_ants(Ant<MapSize, MaxSteps>* ants, size_t ant_count, AntColony<MapSize, MaxSteps>* ant_colony);
 
-        template <size_t MapSize>
-        void print_to_file(std::ofstream& file, AntColony<MapSize>* ant_colony, float (*value_for_idx)(size_t idx, AntColony<MapSize>* ant_colony));
+        template <size_t MapX, size_t MapY, size_t MaxSteps>
+        void create_pheromone_heatmap_frame(std::string tag, AntColony<MapX * MapY, MaxSteps>& ant_colony);
+
+        template <size_t MapX, size_t MapY, size_t MaxSteps>
+        void create_ant_count_heatmap_frame(std::string tag, AntColony<MapX * MapY, MaxSteps>& ant_colony);
 
         template <size_t MapDim, size_t MaxSteps>
         size_t choose_next_node(Ant<dimension::dim2d_to_padded_size(MapDim), MaxSteps>* ant, float exploitation_factor, float(*to_node_cost)(VertexDescriptor initial, VertexDescriptor final), float cost_exponent);
