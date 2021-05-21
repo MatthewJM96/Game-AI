@@ -56,6 +56,7 @@ namespace aco {
                 float increment;
                 float evaporation;
             } local, global;
+            size_t output_frequency;
         };
 
         template <size_t MapSize, size_t MaxSteps>

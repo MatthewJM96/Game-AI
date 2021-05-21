@@ -182,7 +182,7 @@ void aco::acs_graph::do_simulation(
         for (size_t step = 0; step < 2 * MaxSteps; ++step) {
             if (ants_returned >= options.ant_count) break;
 
-            if (step % 10 < 10) {
+            if (step % options.output_frequency == 0) {
                 const size_t padded_dim = dimension::dim_to_padded_dim(MapDim);
                 create_pheromone_heatmap_frame<padded_dim, padded_dim, MaxSteps>("pngs/" + std::to_string(options.iterations - iteration + 1) + "." + std::to_string(step + 1) + ".acs_graph.pheromone", ant_colony);
                 create_ant_count_heatmap_frame<padded_dim, padded_dim, MaxSteps>("pngs/" + std::to_string(options.iterations - iteration + 1) + "." + std::to_string(step + 1) + ".acs_graph.ant_count", ant_colony);
@@ -240,6 +240,8 @@ void aco::acs_graph::do_simulation(
                         ant->path_length = ant->steps_taken;
 
                         if (shortest_path_length < 0 || ant->path_length < shortest_path_length) {
+                            std::cout << "Found new shortest path of length " << std::to_string(ant->path_length) << "." << std::endl;
+
                             std::memcpy(&shortest_path[0], &ant->previous_node_indices[0], sizeof(size_t) * ant->path_length);
                             shortest_path_length = ant->path_length;
                         }

@@ -19,15 +19,16 @@
 int main() {
     std::cout << "Hello, world!" << std::endl;
 
-    const size_t map_dim    = 31;
-    const size_t max_steps  = 300;
-    const size_t ant_count  = 50;
-    const size_t iterations = 50;
+    const size_t map_dim          =  31;
+    const size_t max_steps        = 300;
+    const size_t ant_count        =  50;
+    const size_t iterations       =  50;
+    const size_t output_frequency =  10;
 
     const float global_pheromone_increment   = map_dim * map_dim; // Global increment (best ant in round or all rounds).
     const float global_pheromone_evaporation = 0.02f; // Global decrement on each node per round.
     const float pheromone_increment          = map_dim * map_dim; // Local increment (per ant per node) per timestep.
-    const float pheromone_evaporation        = 0.02f; // Global decrement on each node per timestep.
+    const float pheromone_evaporation        = 0.1f; // Global decrement on each node per timestep.
 
     const float exploitation_factor = 0.9f;
     const float cost_exponent = 2.0f;
@@ -61,7 +62,8 @@ int main() {
             {
                 global_pheromone_increment,
                 global_pheromone_evaporation
-            }
+            },
+            output_frequency
         };
 
         aco::acs_graph::do_simulation<map_dim, max_steps>(idx, graph_map, options);
