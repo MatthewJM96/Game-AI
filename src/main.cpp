@@ -19,14 +19,15 @@
 int main() {
     std::cout << "Hello, world!" << std::endl;
 
-    const size_t map_dim   = 31;
-    const size_t max_steps = 200;
-    const size_t ant_count = 800;
+    const size_t map_dim    = 31;
+    const size_t max_steps  = 300;
+    const size_t ant_count  = 50;
+    const size_t iterations = 50;
 
     const float global_pheromone_increment   = map_dim * map_dim; // Global increment (best ant in round or all rounds).
-    const float global_pheromone_evaporation = 0.1f; // Global decrement on each node per round.
+    const float global_pheromone_evaporation = 0.02f; // Global decrement on each node per round.
     const float pheromone_increment          = map_dim * map_dim; // Local increment (per ant per node) per timestep.
-    const float pheromone_evaporation        = 0.1f; // Global decrement on each node per timestep.
+    const float pheromone_evaporation        = 0.02f; // Global decrement on each node per timestep.
 
     const float exploitation_factor = 0.9f;
     const float cost_exponent = 2.0f;
@@ -37,7 +38,7 @@ int main() {
         // map::maze2d::Map<map_dim> map;
         map::maze2d::Map<map_dim + 2> halo_map;
 
-        // map      = map::maze2d::load_map<map_dim>("maps/15." + idx + ".unsolved.map");
+        // map = map::maze2d::load_map<map_dim>("maps/15." + idx + ".unsolved.map");
         halo_map = map::maze2d::load_map_with_halo<map_dim>("maps/15." + idx + ".unsolved.map");
 
         // map::maze2d::print_map<map_dim>(map);
@@ -49,7 +50,7 @@ int main() {
         // boost::write_graphviz(graph_out, graph_map.graph);
 
         aco::acs_graph::ACSOptions options {
-            10,
+            iterations,
             ant_count,
             exploitation_factor,
             cost_exponent,
