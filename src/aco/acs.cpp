@@ -366,12 +366,21 @@ bool aco::acs::impl::do_ant_next_step(size_t iteration, Ant& ant, AntColony& ant
         VertexDescriptor next_vertex = choose_next_vertex(iteration, ant, ant_colony);
 
         /**
-         * Update ant with next vertex.
+         * Update ant with next vertex. If we're taking a step backward,
+         * just pretend ant has taken one less step.
          */
-        ant.previous_vertices[ant.steps_taken] = ant.current_vertex;
-        ant.visited_vertices[next_vertex]      = true;
-        ant.current_vertex                     = next_vertex;
-        ant.steps_taken                       += 1;
+        if  (next_vertex == ant.previous_vertices[ant.steps_taken - 1]) {
+            ant.steps_taken -= 1;
+
+            if (ant.steps_taken == 0) {
+                ant.returned = true;
+            }
+        } else {
+            ant.previous_vertices[ant.steps_taken] = ant.current_vertex;
+            ant.visited_vertices[next_vertex]      = true;
+            ant.steps_taken                       += 1;
+        }
+        ant.current_vertex = next_vertex;
 
         /**
          * If this next vertex is the food source, then
