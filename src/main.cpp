@@ -18,7 +18,7 @@ void do_iteration_count_test() {
     const size_t map_dim_25       =   51;
     const size_t max_steps_15     =  200;
     const size_t max_steps_25     = 1000;
-    const size_t ant_count        =  200;
+    const size_t ant_count        =   10;
     const size_t iterations       = 1000;
     const aco::acs::ACSOptions::OutputFreq output_frequency = {
         10, 1
@@ -117,8 +117,8 @@ void do_iteration_count_test() {
 void do_map_15_test(size_t map_idx) {
     const size_t map_dim       =   31;
     const size_t max_steps     =  300;
-    const size_t ant_count     =   50;
     const size_t iterations    = 1000;
+    const size_t ant_count     =  10;
     const aco::acs::ACSOptions::OutputFreq output_frequency = {
         60, 2
     };
@@ -175,8 +175,8 @@ void do_map_15_test(size_t map_idx) {
 void do_map_25_test(size_t map_idx) {
     const size_t map_dim       =  51;
     const size_t max_steps     = 300;
-    const size_t ant_count     =  50;
     const size_t iterations    = 400;
+    const size_t ant_count     =   10;
     const aco::acs::ACSOptions::OutputFreq output_frequency = {
         40, 1
     };
