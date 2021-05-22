@@ -4,6 +4,7 @@
 #pragma once
 
 #define WALL_TILE '#'
+#define SOLUTION_TILE '+'
 #define START_TILE 'S'
 #define END_TILE 'E'
 
