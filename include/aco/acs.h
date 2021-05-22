@@ -12,6 +12,8 @@ namespace aco {
         struct Ant;
 
         struct ACSOptions {
+            using EdgeCostFunc = float(*)(EdgeDescriptor edge);
+
             std::string tag;
             size_t iterations;
             struct {
@@ -30,6 +32,7 @@ namespace aco {
                 size_t coarse, fine;
             } output_frequency;
             size_t target_best_path_length;
+            EdgeCostFunc edge_cost_func;
         };
 
         struct AntColony {

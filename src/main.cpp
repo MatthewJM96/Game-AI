@@ -54,7 +54,8 @@ void do_iteration_count_test() {
         },
         false,
         output_frequency,
-        0
+        0,
+        nullptr
     };
 
     for (size_t i = 0; i < 2; ++i) {
@@ -162,7 +163,8 @@ void do_map_25_test(size_t map_idx) {
         },
         true,
         output_frequency,
-        0
+        0,
+        nullptr
     };
 
     size_t iterations_to_ideal_solution = aco::acs::do_simulation(graph_map, options);
