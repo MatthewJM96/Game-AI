@@ -94,15 +94,6 @@ void aco::acs::impl::create_pheromone_heatmap_frame(std::string filename, AntCol
 
     map::maze2d::GraphMap& map = ant_colony.map;
 
-    for (size_t idx = 0; idx < (dim_x * dim_y); ++idx) {
-        if (ant_colony.map.map_idx_to_vertex_map.find(idx) == ant_colony.map.map_idx_to_vertex_map.end()) {
-            size_t x_coord = 10 *      (idx % dim_x);
-            size_t y_coord = 10 * floor(idx / dim_x);
-
-            heatmap_add_weighted_point_with_stamp(heatmap, x_coord, y_coord, saturation_point, &SQUARE_STAMP);
-        }
-    }
-
     for (auto vertex: boost::make_iterator_range(boost::vertices(map.graph))) {
         float net_pheromone_into_vertex = 0.0f;
 
@@ -118,6 +109,15 @@ void aco::acs::impl::create_pheromone_heatmap_frame(std::string filename, AntCol
         size_t y_coord = 10 * floor(idx / dim_x);
 
         heatmap_add_weighted_point(heatmap, x_coord, y_coord, net_pheromone_into_vertex);
+    }
+
+    for (size_t idx = 0; idx < (dim_x * dim_y); ++idx) {
+        if (ant_colony.map.map_idx_to_vertex_map.find(idx) == ant_colony.map.map_idx_to_vertex_map.end()) {
+            size_t x_coord = 10 *      (idx % dim_x);
+            size_t y_coord = 10 * floor(idx / dim_x);
+
+            heatmap_add_weighted_point_with_stamp(heatmap, x_coord, y_coord, saturation_point, &SQUARE_STAMP);
+        }
     }
 
     uint8_t* image_data = new uint8_t[dim_x * 10 * dim_y * 10 * 4];
