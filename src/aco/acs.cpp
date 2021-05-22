@@ -83,7 +83,7 @@ void aco::acs::impl::destroy_ants(AntColony& ant_colony) {
 void aco::acs::impl::create_pheromone_heatmap_frame(std::string filename, AntColony& ant_colony) {
     // Used as a trick to start somewhere decent with respect to
     // limiting the saturation from frame to frame.
-    static float saturation_point = 1.0f;
+    static float saturation_point = 0.1f;
 
     size_t dim_x     = ant_colony.options.map_dimensions.x;
     size_t dim_y     = ant_colony.options.map_dimensions.y;
