@@ -174,9 +174,9 @@ void do_map_25_test(size_t map_idx) {
     const size_t map_dim       =  51;
     const size_t max_steps     = 300;
     const size_t ant_count     =  50;
-    const size_t iterations    =  20;
+    const size_t iterations    = 400;
     const aco::acs::ACSOptions::OutputFreq output_frequency = {
-        2, 1
+        40, 1
     };
 
     const float global_pheromone_increment   = 1.0f; // Global increment (best ant in round or all rounds).
