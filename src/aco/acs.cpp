@@ -239,6 +239,29 @@ map::maze2d::VertexDescriptor aco::acs::impl::choose_next_vertex(size_t iteratio
         //                and "best path" length.
         float score = ant_colony.map.edge_weight_map[edge];
 
+        if (ant_colony.options.prefer_to_get_closer_to_dest) {
+            size_t dim_x     = ant_colony.options.map_dimensions.x;
+            size_t dim_y     = ant_colony.options.map_dimensions.y;
+
+            size_t current_tile_idx   = ant_colony.map.vertex_to_map_idx_map[ant.current_vertex];
+            size_t candidate_tile_idx = ant_colony.map.vertex_to_map_idx_map[candidate_vertex];
+            size_t dest_tile_idx      = ant_colony.map.vertex_to_map_idx_map[ant_colony.map.finish_vertex];
+
+            float current_x_coord   = (float)      (current_tile_idx   % dim_x);
+            float current_y_coord   = (float) floor(current_tile_idx   / dim_x);
+            float candidate_x_coord = (float)      (candidate_tile_idx % dim_x);
+            float candidate_y_coord = (float) floor(candidate_tile_idx / dim_x);
+            float dest_x_coord      = (float)      (dest_tile_idx      % dim_x);
+            float dest_y_coord      = (float) floor(dest_tile_idx      / dim_x);
+
+            float dist_ratio = sqrt(
+                                    (pow((candidate_x_coord - dest_x_coord), 2.0f) + pow((candidate_y_coord - dest_y_coord), 2.0f))
+                                    / (pow((current_x_coord - dest_x_coord), 2.0f) + pow((current_y_coord - dest_y_coord), 2.0f))
+                               );
+
+            score /= dist_ratio;
+        }
+
         /**
          * If this node has the best score so far, set it as best option.
          */

@@ -33,6 +33,7 @@ namespace aco {
             } output_frequency;
             size_t target_best_path_length;
             EdgeCostFunc edge_cost_func;
+            bool prefer_to_get_closer_to_dest;
         };
 
         struct AntColony {
