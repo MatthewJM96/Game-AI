@@ -11,6 +11,9 @@
 
 #include "dimension.hpp"
 
+enum edge_in_path_t {
+    edge_in_path
+};
 enum vertex_map_idx_t {
     vertex_map_idx
 };
@@ -19,16 +22,15 @@ enum vertex_tile_char_t {
 };
 
 namespace boost {
+BOOST_INSTALL_PROPERTY(edge, in_path);
 BOOST_INSTALL_PROPERTY(vertex, map_idx);
-};
-namespace boost {
 BOOST_INSTALL_PROPERTY(vertex, tile_char);
 };
 
 namespace map {
     namespace maze2d {
         using VertexProperties = boost::property<vertex_map_idx_t, size_t, boost::property<vertex_tile_char_t, char>>;
-        using EdgeProperties   = boost::property<boost::edge_weight_t, float>;
+        using EdgeProperties   = boost::property<boost::edge_weight_t, float, boost::property<edge_in_path_t, bool>>;
 
         using Graph = boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, VertexProperties, EdgeProperties>;
 
@@ -36,6 +38,7 @@ namespace map {
         using EdgeDescriptor   = boost::graph_traits<Graph>::edge_descriptor;
 
         using EdgeWeightMap       = boost::property_map<Graph, boost::edge_weight_t>::type;
+        using EdgeInPathMap       = boost::property_map<Graph, edge_in_path_t>::type;
         using VertexToMapIdxMap   = boost::property_map<Graph, vertex_map_idx_t>::type;
         using VertexToTileCharMap = boost::property_map<Graph, vertex_tile_char_t>::type;
         using MapIdxToVertexMap   = std::unordered_map<size_t, VertexDescriptor>;
@@ -50,11 +53,12 @@ namespace map {
         struct GraphMap {
             Graph               graph;
             EdgeWeightMap       edge_weight_map;
+            EdgeInPathMap       edge_in_path_map;
             VertexToTileCharMap vertex_to_tile_char_map;
             VertexToMapIdxMap   vertex_to_map_idx_map;
             MapIdxToVertexMap   map_idx_to_vertex_map;
-            size_t start_idx;
-            size_t finish_idx;
+            VertexDescriptor    start_vertex;
+            VertexDescriptor    finish_vertex;
         };
 
         template <size_t MapX, size_t MapY = MapX>

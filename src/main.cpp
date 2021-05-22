@@ -11,7 +11,7 @@
 
 #include "map/maze2d.h"
 
-#include "aco/acs.h"
+#include "aco/acs_new.h"
 
 int main() {
     std::cout << "Hello, world!" << std::endl;
@@ -19,12 +19,14 @@ int main() {
     const size_t map_dim          =  31;
     const size_t max_steps        = 300;
     const size_t ant_count        =  50;
-    const size_t iterations       =  50;
-    const size_t output_frequency =   1;
+    const size_t iterations       = 200;
+    const aco::acs_new::ACSOptions::OutputFreq output_frequency = {
+        10, 1
+    };
 
-    const float global_pheromone_increment   = map_dim * map_dim; // Global increment (best ant in round or all rounds).
-    const float global_pheromone_evaporation = 0.02f; // Global decrement on each node per round.
-    const float pheromone_increment          = map_dim * map_dim; // Local increment (per ant per node) per timestep.
+    const float global_pheromone_increment   = 1.0f; // Global increment (best ant in round or all rounds).
+    const float global_pheromone_evaporation = 0.1f; // Global decrement on each node per round.
+    const float pheromone_increment          = 1.0f / (float)map_dim; // Local increment (per ant per node) per timestep.
     const float pheromone_evaporation        = 0.1f; // Global decrement on each node per timestep.
 
     const float exploitation_factor = 0.9f;
@@ -47,8 +49,14 @@ int main() {
         // auto graph_out = std::ofstream("graph_out.txt");
         // boost::write_graphviz(graph_out, graph_map.graph);
 
-        aco::acs::ACSOptions options {
+        aco::acs_new::ACSOptions options {
+            idx,
             iterations,
+            {
+                map_dim + 2,
+                map_dim + 2
+            },
+            max_steps,
             ant_count,
             exploitation_factor,
             cost_exponent,
@@ -63,6 +71,6 @@ int main() {
             output_frequency
         };
 
-        aco::acs::do_simulation<map_dim, max_steps>(idx, graph_map, options);
+        aco::acs_new::do_simulation(graph_map, options);
     }
 }

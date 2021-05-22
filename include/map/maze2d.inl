@@ -1,5 +1,8 @@
 #include <fstream>
+#include <iostream>
 #include <list>
+
+#include "constants.h"
 
 template <size_t MapX, size_t MapY>
 map::maze2d::Map<MapX, MapY> map::maze2d::load_map(std::string map_filepath) {
@@ -104,11 +107,9 @@ template <size_t MapX, size_t MapY>
 map::maze2d::GraphMap map::maze2d::impl::halo_map_to_graph(Map<MapX, MapY> map, float initial_weight) {
     GraphMap graph_map;
 
-    graph_map.start_idx  = map.start_idx;
-    graph_map.finish_idx = map.finish_idx;
-
-    graph_map.vertex_to_tile_char_map = get(vertex_tile_char,   graph_map.graph);
     graph_map.edge_weight_map         = get(boost::edge_weight, graph_map.graph);
+    graph_map.edge_in_path_map        = get(edge_in_path,       graph_map.graph);
+    graph_map.vertex_to_tile_char_map = get(vertex_tile_char,   graph_map.graph);
     graph_map.vertex_to_map_idx_map   = get(vertex_map_idx,     graph_map.graph);
 
     std::unordered_map<size_t, bool> nodes_visited;
@@ -184,6 +185,14 @@ map::maze2d::GraphMap map::maze2d::impl::halo_map_to_graph(Map<MapX, MapY> map, 
         nodes_to_visit.erase(nodes_to_visit.begin(), std::next(nodes_to_visit.begin(), number_nodes_to_visit_in_round));
     }
 
+    graph_map.start_vertex  = graph_map.map_idx_to_vertex_map[map.start_idx];
+    graph_map.finish_vertex = graph_map.map_idx_to_vertex_map[map.finish_idx];
+
+    for (auto edge : boost::make_iterator_range(boost::edges(graph_map.graph))) {
+        graph_map.edge_weight_map[edge]  = 0.0f;
+        graph_map.edge_in_path_map[edge] = false;
+    }
+
     return graph_map;
 }
 
@@ -191,11 +200,12 @@ template <size_t MapX, size_t MapY>
 map::maze2d::GraphMap map::maze2d::impl::non_halo_map_to_graph(Map<MapX, MapY> map, float initial_weight) {
     GraphMap graph_map;
 
-    graph_map.start_idx  = map.start_idx;
-    graph_map.finish_idx = map.finish_idx;
+    graph_map.start_vertex  = map.start_idx;
+    graph_map.finish_vertex = map.finish_idx;
 
-    graph_map.vertex_to_tile_char_map = get(vertex_tile_char,   graph_map.graph);
     graph_map.edge_weight_map         = get(boost::edge_weight, graph_map.graph);
+    graph_map.edge_in_path_map        = get(edge_in_path,       graph_map.graph);
+    graph_map.vertex_to_tile_char_map = get(vertex_tile_char,   graph_map.graph);
     graph_map.vertex_to_map_idx_map   = get(vertex_map_idx,     graph_map.graph);
 
     return graph_map;
