@@ -55,7 +55,8 @@ void do_iteration_count_test() {
         false,
         output_frequency,
         0,
-        nullptr
+        nullptr,
+        true
     };
 
     for (size_t i = 0; i < 2; ++i) {
@@ -115,11 +116,11 @@ void do_iteration_count_test() {
 
 void do_map_15_test(size_t map_idx) {
     const size_t map_dim       =   31;
-    const size_t max_steps     =  200;
+    const size_t max_steps     =  300;
     const size_t ant_count     =   50;
     const size_t iterations    = 1000;
     const aco::acs::ACSOptions::OutputFreq output_frequency = {
-        40, 1
+        60, 2
     };
 
     const float global_pheromone_increment   = 1.0f; // Global increment (best ant in round or all rounds).
@@ -164,7 +165,8 @@ void do_map_15_test(size_t map_idx) {
         true,
         output_frequency,
         0,
-        nullptr
+        nullptr,
+        true
     };
 
     size_t iterations_to_ideal_solution = aco::acs::do_simulation(graph_map, options);
@@ -221,7 +223,8 @@ void do_map_25_test(size_t map_idx) {
         true,
         output_frequency,
         0,
-        nullptr
+        nullptr,
+        true
     };
 
     size_t iterations_to_ideal_solution = aco::acs::do_simulation(graph_map, options);
@@ -230,9 +233,9 @@ void do_map_25_test(size_t map_idx) {
 int main() {
     std::cout << "Hello, world!" << std::endl;
 
-    do_map_15_test(1);
+    // do_map_15_test(1);
 
     // do_map_25_test(0);
 
-    // do_iteration_count_test();
+    do_iteration_count_test();
 }
