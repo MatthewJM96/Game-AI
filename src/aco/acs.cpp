@@ -99,7 +99,7 @@ void aco::acs::impl::create_pheromone_heatmap_frame(std::string filename, AntCol
             size_t x_coord = 10 *      (idx % dim_x);
             size_t y_coord = 10 * floor(idx / dim_x);
 
-            heatmap_add_weighted_point_with_stamp(heatmap, x_coord, y_coord, (float)ant_count, &SQUARE_STAMP);
+            heatmap_add_weighted_point_with_stamp(heatmap, x_coord, y_coord, saturation_point, &SQUARE_STAMP);
         }
     }
 
