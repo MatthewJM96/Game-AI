@@ -8,6 +8,8 @@ template <size_t MapX, size_t MapY>
 map::maze2d::Map<MapX, MapY> map::maze2d::load_map(std::string map_filepath) {
     Map<MapX, MapY> map;
 
+    map.solution_length = 0;
+
     std::ifstream map_file(map_filepath);
 
     size_t row = 0;
@@ -22,11 +24,16 @@ map::maze2d::Map<MapX, MapY> map::maze2d::load_map(std::string map_filepath) {
                 map.start_idx = idx;
             } else if (line[col] == END_TILE) {
                 map.finish_idx = idx;
+            } else if (line[col] == SOLUTION_TILE) {
+                map.solution_length += 1;
             }
         }
 
         ++row;
     }
+
+    // Increment solution length one more time to get to end tile.
+    map.solution_length += 1;
 
     return std::move(map);
 }
@@ -43,6 +50,8 @@ map::maze2d::Map<
         dimension::dim_to_padded_dim(MapX),
         dimension::dim_to_padded_dim(MapY)
     > halo_map;
+
+    halo_map.solution_length = 0;
 
     // Initialise first and last row of halo map.
     for (size_t i = 0; i < padded_dim_x; ++i) {
@@ -71,11 +80,16 @@ map::maze2d::Map<
                 halo_map.start_idx = halo_idx;
             } else if (line[col] == END_TILE) {
                 halo_map.finish_idx = halo_idx;
+            } else if (line[col] == SOLUTION_TILE) {
+                halo_map.solution_length += 1;
             }
         }
 
         ++row;
     }
+
+    // Increment solution length one more time to get to end tile.
+    halo_map.solution_length += 1;
 
     return std::move(halo_map);
 }
@@ -106,6 +120,8 @@ map::maze2d::GraphMap map::maze2d::map_to_graph(Map<MapX, MapY> map, float initi
 template <size_t MapX, size_t MapY>
 map::maze2d::GraphMap map::maze2d::impl::halo_map_to_graph(Map<MapX, MapY> map, float initial_weight) {
     GraphMap graph_map;
+
+    graph_map.solution_length = map.solution_length;
 
     graph_map.edge_weight_map         = get(boost::edge_weight, graph_map.graph);
     graph_map.edge_in_path_map        = get(edge_in_path,       graph_map.graph);

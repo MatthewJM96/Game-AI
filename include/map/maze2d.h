@@ -48,6 +48,7 @@ namespace map {
             std::array<char, MapX * MapY> map;
             size_t start_idx;
             size_t finish_idx;
+            size_t solution_length;
         };
 
         struct GraphMap {
@@ -59,6 +60,7 @@ namespace map {
             MapIdxToVertexMap   map_idx_to_vertex_map;
             VertexDescriptor    start_vertex;
             VertexDescriptor    finish_vertex;
+            size_t              solution_length;
         };
 
         template <size_t MapX, size_t MapY = MapX>
