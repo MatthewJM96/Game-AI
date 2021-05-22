@@ -183,13 +183,13 @@ map::maze2d::GraphMap map::maze2d::impl::halo_map_to_graph(Map<MapX, MapY> map, 
             size_t row_idx = std::floor((float)current_node_idx / (float)MapX);
             size_t col_idx = current_node_idx % MapX;
 
-            do_adjacent_node_visit((row_idx - 1) * MapX + col_idx - 1, current_node_idx);
+            // do_adjacent_node_visit((row_idx - 1) * MapX + col_idx - 1, current_node_idx);
             do_adjacent_node_visit((row_idx - 1) * MapX + col_idx,     current_node_idx);
-            do_adjacent_node_visit((row_idx - 1) * MapX + col_idx + 1, current_node_idx);
+            // do_adjacent_node_visit((row_idx - 1) * MapX + col_idx + 1, current_node_idx);
             do_adjacent_node_visit( row_idx      * MapX + col_idx + 1, current_node_idx);
-            do_adjacent_node_visit((row_idx + 1) * MapX + col_idx + 1, current_node_idx);
+            // do_adjacent_node_visit((row_idx + 1) * MapX + col_idx + 1, current_node_idx);
             do_adjacent_node_visit((row_idx + 1) * MapX + col_idx,     current_node_idx);
-            do_adjacent_node_visit((row_idx + 1) * MapX + col_idx - 1, current_node_idx);
+            // do_adjacent_node_visit((row_idx + 1) * MapX + col_idx - 1, current_node_idx);
             do_adjacent_node_visit( row_idx      * MapX + col_idx - 1, current_node_idx);
 
             nodes_visited[current_node_idx] = true;
