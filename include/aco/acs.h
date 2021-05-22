@@ -25,9 +25,11 @@ namespace aco {
                 float increment;
                 float evaporation;
             } local, global;
+            bool do_output;
             struct OutputFreq {
                 size_t coarse, fine;
             } output_frequency;
+            size_t target_best_path_length;
         };
 
         struct AntColony {
@@ -55,7 +57,7 @@ namespace aco {
             size_t path_length = 0;
         };
 
-        void do_simulation(GraphMap map, ACSOptions options);
+        size_t do_simulation(GraphMap map, ACSOptions options);
 
         namespace impl {
             inline float rand(float min, float max);

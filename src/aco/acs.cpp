@@ -385,9 +385,9 @@ void aco::acs::impl::do_iteration(size_t iteration, AntColony& ant_colony) {
         /**
          * Do some periodic output of state.
          */
-        if (
-            iteration % ant_colony.options.output_frequency.coarse == 0
-                && step % ant_colony.options.output_frequency.fine == 0
+        if (                ant_colony.options.do_output
+             && iteration % ant_colony.options.output_frequency.coarse == 0
+                  && step % ant_colony.options.output_frequency.fine == 0
         ) {
             std::string numeric_code = std::to_string(iteration * (2 * ant_colony.options.max_steps) + step);
             if (numeric_code.size() < 10)
@@ -424,7 +424,7 @@ void aco::acs::impl::do_iteration(size_t iteration, AntColony& ant_colony) {
     }
 }
 
-void aco::acs::do_simulation(GraphMap map, ACSOptions options) {
+size_t aco::acs::do_simulation(GraphMap map, ACSOptions options) {
     /**
      * Critical data points for simulation.
      */
@@ -448,8 +448,13 @@ void aco::acs::do_simulation(GraphMap map, ACSOptions options) {
     /**
      * Main simulation loop.
      */
-    for (size_t iteration = 0; iteration < options.iterations; ++iteration)
+    size_t iteration = 0;
+    for (; iteration < options.iterations; ++iteration) {
         impl::do_iteration(iteration, ant_colony);
+
+        if (ant_colony.shortest_path.length <= options.target_best_path_length)
+            break;
+    }
 
     /**
      * Clean up.
@@ -457,4 +462,12 @@ void aco::acs::do_simulation(GraphMap map, ACSOptions options) {
     impl::destroy_ants(ant_colony);
     delete[] ants;
     delete[] ant_colony.shortest_path.steps;
+
+    /**
+     * Return number of iterations taken to reach target.
+     *
+     * Will be equal to configured total iterations if target
+     * is set impossibly low (e.g. 0).
+     */
+    return iteration + 1;
 }
