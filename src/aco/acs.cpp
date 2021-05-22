@@ -7,6 +7,22 @@
 
 #include "image.hpp"
 
+static float SQUARE_STAMP_DATA[] = {
+    1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+    1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+    1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+    1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+    1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+    1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+    1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+    1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+    1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f
+};
+
+static heatmap_stamp_t SQUARE_STAMP = {
+    SQUARE_STAMP_DATA, 9, 9
+};
+
 float aco::acs::impl::rand(float min, float max) {
     static std::default_random_engine            generator;
     static std::uniform_real_distribution<float> distrib(0.0f, 1.0f);
@@ -69,13 +85,23 @@ void aco::acs::impl::create_pheromone_heatmap_frame(std::string filename, AntCol
     // limiting the saturation from frame to frame.
     static float saturation_point = 1.0f;
 
-    size_t dim_x = ant_colony.options.map_dimensions.x;
-    size_t dim_y = ant_colony.options.map_dimensions.y;
+    size_t dim_x     = ant_colony.options.map_dimensions.x;
+    size_t dim_y     = ant_colony.options.map_dimensions.y;
+    size_t ant_count = ant_colony.options.ant_count;
 
     // * 10 per dimension to give something less tiny as heatmap.
     heatmap_t* heatmap = heatmap_new(dim_x * 10, dim_y * 10);
 
     map::maze2d::GraphMap& map = ant_colony.map;
+
+    for (size_t idx = 0; idx < (dim_x * dim_y); ++idx) {
+        if (ant_colony.map.map_idx_to_vertex_map.find(idx) == ant_colony.map.map_idx_to_vertex_map.end()) {
+            size_t x_coord = 10 *      (idx % dim_x);
+            size_t y_coord = 10 * floor(idx / dim_x);
+
+            heatmap_add_weighted_point_with_stamp(heatmap, x_coord, y_coord, (float)ant_count, &SQUARE_STAMP);
+        }
+    }
 
     for (auto vertex: boost::make_iterator_range(boost::vertices(map.graph))) {
         float net_pheromone_into_vertex = 0.0f;
@@ -103,15 +129,25 @@ void aco::acs::impl::create_pheromone_heatmap_frame(std::string filename, AntCol
 }
 
 void aco::acs::impl::create_ant_count_heatmap_frame(std::string filename, AntColony& ant_colony) {
-    size_t dim_x = ant_colony.options.map_dimensions.x;
-    size_t dim_y = ant_colony.options.map_dimensions.y;
+    size_t dim_x     = ant_colony.options.map_dimensions.x;
+    size_t dim_y     = ant_colony.options.map_dimensions.y;
+    size_t ant_count = ant_colony.options.ant_count;
 
     // * 10 per dimension to give something less tiny as heatmap.
     heatmap_t* heatmap = heatmap_new(dim_x * 10, dim_y * 10);
 
     map::maze2d::GraphMap& map = ant_colony.map;
 
-    for (size_t i = 0; i < ant_colony.options.ant_count; ++i) {
+    for (size_t idx = 0; idx < (dim_x * dim_y); ++idx) {
+        if (ant_colony.map.map_idx_to_vertex_map.find(idx) == ant_colony.map.map_idx_to_vertex_map.end()) {
+            size_t x_coord = 10 *      (idx % dim_x);
+            size_t y_coord = 10 * floor(idx / dim_x);
+
+            heatmap_add_weighted_point_with_stamp(heatmap, x_coord, y_coord, (float)ant_count, &SQUARE_STAMP);
+        }
+    }
+
+    for (size_t i = 0; i < ant_count; ++i) {
         Ant& ant = ant_colony.ants[i];
 
         // If this ant has returned without food, don't show it on the heatmap.
@@ -126,7 +162,7 @@ void aco::acs::impl::create_ant_count_heatmap_frame(std::string filename, AntCol
     }
 
     uint8_t* image_data = new uint8_t[dim_x * 10 * dim_y * 10 * 4];
-    heatmap_render_saturated_to(heatmap, heatmap_cs_default, (float)ant_colony.options.ant_count, image_data);
+    heatmap_render_saturated_to(heatmap, heatmap_cs_default, (float)ant_count, image_data);
 
     heatmap_free(heatmap);
 
