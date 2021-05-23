@@ -1,22 +1,25 @@
+#include "map/maze2d.h"
+
 #include <fstream>
 #include <iostream>
 #include <list>
 
 #include "constants.h"
 
-template <size_t MapX, size_t MapY>
-map::maze2d::Map<MapX, MapY> map::maze2d::load_map(std::string map_filepath) {
-    Map<MapX, MapY> map;
+map::maze2d::Map map::maze2d::load_map(std::string map_filepath, Map2DDimensions dimensions) {
+    Map map;
 
+    map.dims = dimensions;
     map.solution_length = 0;
+    map.map = new char[map.dims.x * map.dims.y];
 
     std::ifstream map_file(map_filepath);
 
     size_t row = 0;
     std::string line;
     while (std::getline(map_file, line)) {
-        for (size_t col = 0; col < MapX; ++col) {
-            size_t idx = row * MapX + col;
+        for (size_t col = 0; col < dimensions.x; ++col) {
+            size_t idx = row * dimensions.x + col;
 
             map.map[idx] = line[col];
 
@@ -38,20 +41,18 @@ map::maze2d::Map<MapX, MapY> map::maze2d::load_map(std::string map_filepath) {
     return std::move(map);
 }
 
-template <size_t MapX, size_t MapY>
-map::maze2d::Map<
-    dimension::dim_to_padded_dim(MapX),
-    dimension::dim_to_padded_dim(MapY)
-> map::maze2d::load_map_with_halo(std::string map_filepath) {
-    const size_t padded_dim_x = dimension::dim_to_padded_dim(MapX);
-    const size_t padded_dim_y = dimension::dim_to_padded_dim(MapY);
 
-    Map<
-        dimension::dim_to_padded_dim(MapX),
-        dimension::dim_to_padded_dim(MapY)
-    > halo_map;
+map::maze2d::Map map::maze2d::load_map_with_halo(std::string map_filepath, Map2DDimensions dimensions) {
+    const size_t padded_dim_x = dimension::dim_to_padded_dim(dimensions.x);
+    const size_t padded_dim_y = dimension::dim_to_padded_dim(dimensions.y);
 
+    Map halo_map;
+
+    halo_map.dims = {
+        padded_dim_x, padded_dim_y
+    };
     halo_map.solution_length = 0;
+    halo_map.map = new char[halo_map.dims.x * halo_map.dims.y];
 
     // Initialise first and last row of halo map.
     for (size_t i = 0; i < padded_dim_x; ++i) {
@@ -71,7 +72,7 @@ map::maze2d::Map<
 
         // Iterate over the "inner" (non-halo) width - that is,
         // the part we actually load from the map file.
-        for (size_t col = 0; col < MapX; ++col) {
+        for (size_t col = 0; col < dimensions.x; ++col) {
             size_t halo_idx = (row + 1) * padded_dim_x + col + 1;
 
             halo_map.map[halo_idx] = line[col];
@@ -94,11 +95,10 @@ map::maze2d::Map<
     return std::move(halo_map);
 }
 
-template <size_t MapX, size_t MapY>
-void map::maze2d::print_map(const Map<MapX, MapY>& map) {
-    for (size_t i = 0; i < MapY; ++i) {
-        for (size_t j = 0; j < MapX; ++j) {
-            size_t idx = i * MapX + j;
+void map::maze2d::print_map(const Map& map) {
+    for (size_t i = 0; i < map.dims.y; ++i) {
+        for (size_t j = 0; j < map.dims.x; ++j) {
+            size_t idx = i * map.dims.x + j;
 
             std::cout << map.map[idx] << " ";
         }
@@ -108,17 +108,16 @@ void map::maze2d::print_map(const Map<MapX, MapY>& map) {
     std::cout << "\n";
 }
 
-template <size_t MapX, size_t MapY, bool MapHasHalo>
-map::maze2d::GraphMap map::maze2d::map_to_graph(Map<MapX, MapY> map, float initial_weight) {
-    if constexpr (MapHasHalo) {
+
+map::maze2d::GraphMap map::maze2d::map_to_graph(Map map, float initial_weight, bool has_halo /*= true*/) {
+    if (has_halo) {
         return impl::halo_map_to_graph(map, initial_weight);
     } else {
         return impl::non_halo_map_to_graph(map, initial_weight);
     }
 }
 
-template <size_t MapX, size_t MapY>
-map::maze2d::GraphMap map::maze2d::impl::halo_map_to_graph(Map<MapX, MapY> map, float initial_weight) {
+map::maze2d::GraphMap map::maze2d::impl::halo_map_to_graph(Map map, float initial_weight) {
     GraphMap graph_map;
 
     graph_map.solution_length = map.solution_length;
@@ -180,17 +179,17 @@ map::maze2d::GraphMap map::maze2d::impl::halo_map_to_graph(Map<MapX, MapY> map, 
         while (nodes_left_to_visit_in_round > 0) {
             size_t current_node_idx = *it;
 
-            size_t row_idx = std::floor((float)current_node_idx / (float)MapX);
-            size_t col_idx = current_node_idx % MapX;
+            size_t row_idx = std::floor((float)current_node_idx / (float)map.dims.x);
+            size_t col_idx = current_node_idx % map.dims.x;
 
-            // do_adjacent_node_visit((row_idx - 1) * MapX + col_idx - 1, current_node_idx);
-            do_adjacent_node_visit((row_idx - 1) * MapX + col_idx,     current_node_idx);
-            // do_adjacent_node_visit((row_idx - 1) * MapX + col_idx + 1, current_node_idx);
-            do_adjacent_node_visit( row_idx      * MapX + col_idx + 1, current_node_idx);
-            // do_adjacent_node_visit((row_idx + 1) * MapX + col_idx + 1, current_node_idx);
-            do_adjacent_node_visit((row_idx + 1) * MapX + col_idx,     current_node_idx);
-            // do_adjacent_node_visit((row_idx + 1) * MapX + col_idx - 1, current_node_idx);
-            do_adjacent_node_visit( row_idx      * MapX + col_idx - 1, current_node_idx);
+            // do_adjacent_node_visit((row_idx - 1) * map.dims.x + col_idx - 1, current_node_idx);
+            do_adjacent_node_visit((row_idx - 1) * map.dims.x + col_idx,     current_node_idx);
+            // do_adjacent_node_visit((row_idx - 1) * map.dims.x + col_idx + 1, current_node_idx);
+            do_adjacent_node_visit( row_idx      * map.dims.x + col_idx + 1, current_node_idx);
+            // do_adjacent_node_visit((row_idx + 1) * map.dims.x + col_idx + 1, current_node_idx);
+            do_adjacent_node_visit((row_idx + 1) * map.dims.x + col_idx,     current_node_idx);
+            // do_adjacent_node_visit((row_idx + 1) * map.dims.x + col_idx - 1, current_node_idx);
+            do_adjacent_node_visit( row_idx      * map.dims.x + col_idx - 1, current_node_idx);
 
             nodes_visited[current_node_idx] = true;
 
@@ -212,8 +211,8 @@ map::maze2d::GraphMap map::maze2d::impl::halo_map_to_graph(Map<MapX, MapY> map, 
     return graph_map;
 }
 
-template <size_t MapX, size_t MapY>
-map::maze2d::GraphMap map::maze2d::impl::non_halo_map_to_graph(Map<MapX, MapY> map, float initial_weight) {
+
+map::maze2d::GraphMap map::maze2d::impl::non_halo_map_to_graph(Map map, float initial_weight) {
     GraphMap graph_map;
 
     graph_map.start_vertex  = map.start_idx;
@@ -223,6 +222,8 @@ map::maze2d::GraphMap map::maze2d::impl::non_halo_map_to_graph(Map<MapX, MapY> m
     graph_map.edge_in_path_map        = get(edge_in_path,       graph_map.graph);
     graph_map.vertex_to_tile_char_map = get(vertex_tile_char,   graph_map.graph);
     graph_map.vertex_to_map_idx_map   = get(vertex_map_idx,     graph_map.graph);
+
+    // TODO(Matthew): Implement!
 
     return graph_map;
 }

@@ -7,6 +7,10 @@
 #include <fstream>
 
 namespace dimension {
+    struct Map2DDimensions {
+        size_t x, y;
+    };
+
     constexpr size_t dim_to_padded_dim(size_t dim) {
         return dim + 2;
     }

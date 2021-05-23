@@ -3,10 +3,12 @@
 
 #pragma once
 
+#include "dimension.hpp"
 #include "map/maze2d.h"
 
 namespace aco {
     namespace acs {
+        using namespace dimension;
         using namespace map::maze2d;
 
         struct Ant;
@@ -14,15 +16,13 @@ namespace aco {
         struct ACSOptions {
             using EdgeCostFunc = float(*)(EdgeDescriptor edge);
 
-            std::string tag;
-            size_t iterations;
-            struct {
-                size_t x, y;
-            } map_dimensions;
-            size_t max_steps;
-            size_t ant_count;
-            float  exploitation_factor;
-            float  cost_exponent;
+            std::string     tag;
+            size_t          iterations;
+            Map2DDimensions map_dimensions;
+            size_t          max_steps;
+            size_t          ant_count;
+            float           exploitation_factor;
+            float           cost_exponent;
             struct {
                 float increment;
                 float evaporation;
@@ -31,9 +31,9 @@ namespace aco {
             struct OutputFreq {
                 size_t coarse, fine;
             } output_frequency;
-            size_t target_best_path_length;
+            size_t       target_best_path_length;
             EdgeCostFunc edge_cost_func;
-            bool prefer_to_get_closer_to_dest;
+            bool         prefer_to_get_closer_to_dest;
         };
 
         struct AntColony {

@@ -29,6 +29,8 @@ BOOST_INSTALL_PROPERTY(vertex, tile_char);
 
 namespace map {
     namespace maze2d {
+        using namespace dimension;
+
         using VertexProperties = boost::property<vertex_map_idx_t, size_t, boost::property<vertex_tile_char_t, char>>;
         using EdgeProperties   = boost::property<boost::edge_weight_t, float, boost::property<edge_in_path_t, bool>>;
 
@@ -43,12 +45,12 @@ namespace map {
         using VertexToTileCharMap = boost::property_map<Graph, vertex_tile_char_t>::type;
         using MapIdxToVertexMap   = std::unordered_map<size_t, VertexDescriptor>;
 
-        template <size_t MapX, size_t MapY = MapX>
         struct Map {
-            std::array<char, MapX * MapY> map;
-            size_t start_idx;
-            size_t finish_idx;
-            size_t solution_length;
+            char*           map;
+            Map2DDimensions dims;
+            size_t          start_idx;
+            size_t          finish_idx;
+            size_t          solution_length;
         };
 
         struct GraphMap {
@@ -63,34 +65,22 @@ namespace map {
             size_t              solution_length;
         };
 
-        template <size_t MapX, size_t MapY = MapX>
-        Map<MapX, MapY> load_map(std::string map_filepath);
+        Map load_map(std::string map_filepath, Map2DDimensions dimensions);
 
-        template <size_t MapX, size_t MapY = MapX>
-        Map<
-            dimension::dim_to_padded_dim(MapX),
-            dimension::dim_to_padded_dim(MapY)
-        > load_map_with_halo(std::string map_filepath);
+        Map load_map_with_halo(std::string map_filepath, Map2DDimensions dimensions);
 
-        template <size_t MapX, size_t MapY = MapX>
-        void print_map(const Map<MapX, MapY>& map);
+        void print_map(const Map& map);
 
-        template <size_t MapX, size_t MapY = MapX>
-        Graph load_map_as_graph(std::string map_filepath);
+        // Graph load_map_as_graph(std::string map_filepath);
 
-        template <size_t MapX, size_t MapY = MapX, bool MapHasHalo = true>
-        GraphMap map_to_graph(Map<MapX, MapY> map, float initial_weight);
+        GraphMap map_to_graph(Map map, float initial_weight, bool has_halo = true);
 
         namespace impl {
-            template <size_t MapX, size_t MapY>
-            GraphMap halo_map_to_graph(Map<MapX, MapY> map, float initial_weight);
+            inline GraphMap halo_map_to_graph(Map map, float initial_weight);
 
-            template <size_t MapX, size_t MapY>
-            GraphMap non_halo_map_to_graph(Map<MapX, MapY> map, float initial_weight);
+            inline GraphMap non_halo_map_to_graph(Map map, float initial_weight);
         };
     };
 };
-
-#include "maze2d.inl"
 
 #endif // __map_maze2d_h
