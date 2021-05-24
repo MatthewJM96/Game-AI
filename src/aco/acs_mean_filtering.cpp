@@ -588,6 +588,16 @@ void aco::acs_mean_filtering::impl::do_iteration(size_t iteration, AntColony& an
     }
 
     /**
+     * Calculate entropy.
+     */
+    float entropy = 0.0f;
+    for (auto& path_group : ant_path_tracker_old) {
+        float popularity = (float)path_group.second.size() / (float)ant_colony.options.ant_count;
+        entropy += popularity * log(popularity);
+    }
+    entropy /= log(1.0f / (float)ant_colony.options.ant_count);
+
+    /**
      * Apply global updating rule.
      */
     for (auto edge : boost::make_iterator_range(boost::edges(ant_colony.map.graph))) {
