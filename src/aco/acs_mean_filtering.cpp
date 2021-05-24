@@ -298,8 +298,11 @@ map::maze2d::VertexDescriptor aco::acs_mean_filtering::impl::choose_next_vertex(
             return ant.current_vertex;
         }
         // Increment backstep counter and do the backstep.
-        ant.back_step_counter += 1;
-        return ant.previous_vertices[ant.steps_taken - ant.back_step_counter];
+        //      Increment must be by 2 as steps_taken will be incremented too.
+        //      Backstep is +1 on counter.
+        size_t step_back = ant.back_step_counter + 1;
+        ant.back_step_counter += 2;
+        return ant.previous_vertices[ant.steps_taken - step_back];
     }
 
     // TODO(Matthew): On the first iteration, we do no exploitation. We may want
@@ -340,8 +343,11 @@ map::maze2d::VertexDescriptor aco::acs_mean_filtering::impl::choose_next_vertex(
         return ant.current_vertex;
     }
     // Increment backstep counter and do the backstep.
-    ant.back_step_counter += 1;
-    return ant.previous_vertices[ant.steps_taken - ant.back_step_counter];
+    //      Increment must be by 2 as steps_taken will be incremented too.
+    //      Backstep is +1 on counter.
+    size_t step_back = ant.back_step_counter + 1;
+    ant.back_step_counter += 2;
+    return ant.previous_vertices[ant.steps_taken - step_back];
 }
 
 bool aco::acs_mean_filtering::impl::do_ant_next_step(
