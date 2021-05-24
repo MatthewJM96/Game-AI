@@ -72,6 +72,8 @@ void aco::acs::impl::reset_ants(AntColony& ant_colony) {
 
         ant.steps_taken = 0;
         ant.path_length = 0;
+
+        ant.back_step_counter = 0;
     }
 }
 
@@ -287,7 +289,16 @@ map::maze2d::VertexDescriptor aco::acs::impl::choose_next_vertex(size_t iteratio
     /**
      * If no candidates are found, then just send the ant back to where it came from.
      */
-    if (num_candidates == 0) return ant.previous_vertices[ant.steps_taken - 1];
+    if (num_candidates == 0) {
+        // If backstep counter is equal to steps taken, the ant can't
+        // possibly step any further back.
+        if (ant.back_step_counter == ant.steps_taken) {
+            return ant.current_vertex;
+        }
+        // Increment backstep counter and do the backstep.
+        ant.back_step_counter += 1;
+        return ant.previous_vertices[ant.steps_taken - ant.back_step_counter];
+    }
 
     // TODO(Matthew): On the first iteration, we do no exploitation. We may want
     //                to go even further and consider an adaptive exploitation_factor
@@ -298,7 +309,11 @@ map::maze2d::VertexDescriptor aco::acs::impl::choose_next_vertex(size_t iteratio
      * Note that on first iteration we do no exploitation.
      */
     float exploitation_val = rand(0.0f, 1.0f);
-    if (exploitation_val < (iteration > 0 ? ant_colony.options.exploitation_factor : 0.0f)) return best_option.vertex;
+    if (exploitation_val < (iteration > 0 ? ant_colony.options.exploitation_factor : 0.0f)) {
+        // Reset backstep counter and return best choice.
+        ant.back_step_counter = 0;
+        return best_option.vertex;
+    }
 
     // If we get here, then this ant is exploring.
 
@@ -309,11 +324,22 @@ map::maze2d::VertexDescriptor aco::acs::impl::choose_next_vertex(size_t iteratio
      */
     float choice_val = rand(0.0f, total_score);
     for (size_t choice_idx = 0; choice_idx < num_candidates; ++choice_idx)
-        if (choice_val <= cumulative_scores[choice_idx]) return vertices[choice_idx];
+        if (choice_val <= cumulative_scores[choice_idx]) {
+            // Reset backstep counter and return choice.
+            ant.back_step_counter = 0;
+            return vertices[choice_idx];
+        }
 
     std::cout << "Error: could not decide where to send ant, check maths of choose_next_vertex!" << std::endl;
 
-    return ant.previous_vertices[ant.steps_taken - 1];
+    // If backstep counter is equal to steps taken, the ant can't
+    // possibly step any further back.
+    if (ant.back_step_counter == ant.steps_taken) {
+        return ant.current_vertex;
+    }
+    // Increment backstep counter and do the backstep.
+    ant.back_step_counter += 1;
+    return ant.previous_vertices[ant.steps_taken - ant.back_step_counter];
 }
 
 bool aco::acs::impl::do_ant_next_step(size_t iteration, Ant& ant, AntColony& ant_colony) {
@@ -386,20 +412,11 @@ bool aco::acs::impl::do_ant_next_step(size_t iteration, Ant& ant, AntColony& ant
         VertexDescriptor next_vertex = choose_next_vertex(iteration, ant, ant_colony);
 
         /**
-         * Update ant with next vertex. If we're taking a step backward,
-         * just pretend ant has taken one less step.
+         * Update ant with next vertex.
          */
-        if  (next_vertex == ant.previous_vertices[ant.steps_taken - 1]) {
-            ant.steps_taken -= 1;
-
-            if (ant.steps_taken == 0) {
-                ant.returned = true;
-            }
-        } else {
-            ant.previous_vertices[ant.steps_taken] = ant.current_vertex;
-            ant.visited_vertices[next_vertex]      = true;
-            ant.steps_taken                       += 1;
-        }
+        ant.previous_vertices[ant.steps_taken] = ant.current_vertex;
+        ant.visited_vertices[next_vertex]      = true;
+        ant.steps_taken                       += 1;
         ant.current_vertex = next_vertex;
 
         /**

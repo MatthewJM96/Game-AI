@@ -59,6 +59,8 @@ namespace aco {
 
             size_t steps_taken = 0;
             size_t path_length = 0;
+
+            size_t back_step_counter = 0;
         };
 
         size_t do_simulation(GraphMap map, ACSOptions options);
