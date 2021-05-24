@@ -1,5 +1,6 @@
 #include "aco/acs_mean_filtering.h"
 
+#include <functional>
 #include <iostream>
 #include <limits>
 #include <random>
@@ -634,6 +635,51 @@ void aco::acs_mean_filtering::impl::do_iteration(size_t iteration, AntColony& an
             ant_colony.map.edge_weight_map[edge] +=
                 ant_colony.options.global.evaporation
                     * (ant_colony.options.global.increment / ant_colony.shortest_path.length);
+    }
+
+    /**
+     * Apply mean filtering if entropy demands it.
+     */
+    if (entropy < ant_colony.options.mean_filtering_trigger) {
+        // TODO(Matthew): Eeeew.
+        AntColony::ShortestPath& best_path = ant_colony.shortest_path;
+        for (size_t best_path_idx = 0; best_path_idx < best_path.length; ++best_path_idx) {
+            VertexDescriptor a_best_vertex = best_path.steps[best_path_idx];
+
+            std::function<void(VertexDescriptor, size_t, size_t)> do_mean_filtering = [&](VertexDescriptor vertex, size_t depth, size_t target_depth) {
+                if (depth >= target_depth) return;
+
+                auto edge_its = boost::out_edges(vertex, ant_colony.map.graph);
+
+                /**
+                 * Get total pheromone going away from this vertex.
+                 */
+                float num_out_edges   = 0.0f;
+                float total_pheromone = 0.0f;
+                for (auto edge : boost::make_iterator_range(edge_its)) {
+                    total_pheromone += ant_colony.map.edge_weight_map[edge];
+                    num_out_edges   += 1.0f;
+                }
+
+                /**
+                 * Apply average pheromone to each edge leaving this vertex.
+                 */
+                float average_pheromone = total_pheromone / num_out_edges;
+                for (auto edge : boost::make_iterator_range(edge_its))
+                    ant_colony.map.edge_weight_map[edge] = average_pheromone;
+
+                /**
+                 * Update next order of neighbours (if target depth requires).
+                 */
+                for (auto edge : boost::make_iterator_range(edge_its))
+                    do_mean_filtering(boost::target(edge, ant_colony.map.graph), depth + 1, target_depth);
+            };
+
+            /**
+             * Begin mean filtering.
+             */
+            do_mean_filtering(a_best_vertex, 0, ant_colony.options.mean_filtering_order);
+        }
     }
 }
 
