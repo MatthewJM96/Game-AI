@@ -438,7 +438,8 @@ bool aco::acs_mean_filtering::impl::do_ant_next_step(
         /**
          * Check if ant has strayed from other ants in its group.
          */
-        bool need_new_path_group = false;
+        bool need_new_path_group   = false;
+        bool joined_existing_group = false;
         for (size_t cursor = 0; cursor < path_group_curors[ant.path_group]; ++cursor) {
             Ant& companion_ant = *ant_path_tracker_old[ant.path_group][cursor];
 
@@ -456,6 +457,7 @@ bool aco::acs_mean_filtering::impl::do_ant_next_step(
                 //   It should be fine to just remove ant from previous path group like this as
                 //   it will be replaced in its position by an ant beyond the cursor for that path group.
                 std::remove(ant_path_tracker_new[ant.path_group].begin(), ant_path_tracker_new[ant.path_group].end(), &ant);
+                ant_path_tracker_new[ant.path_group].erase(ant_path_tracker_new[ant.path_group].end() - 1);
                 // Update ant's path group assignment.
                 ant.path_group = companion_ant.path_group;
                 // Make sure to put ant in path group at current point of that path group's cursor.
@@ -463,7 +465,8 @@ bool aco::acs_mean_filtering::impl::do_ant_next_step(
                 path_group.push_back(path_group[path_group_curors[ant.path_group]]);
                 path_group[path_group_curors[ant.path_group]] = &ant;
                 // Ant no longer needs its own new path group.
-                need_new_path_group = false;
+                need_new_path_group   = false;
+                joined_existing_group = true;
                 // Break out of search for new path group.
                 break;
             }
@@ -496,13 +499,14 @@ bool aco::acs_mean_filtering::impl::do_ant_next_step(
             //   It should be fine to just remove ant from previous path group like this as
             //   it will be replaced in its position by an ant beyond the cursor for that path group.
             std::remove(ant_path_tracker_new[ant.path_group].begin(), ant_path_tracker_new[ant.path_group].end(), &ant);
+            ant_path_tracker_new[ant.path_group].erase(ant_path_tracker_new[ant.path_group].end() - 1);
 
             ant_path_tracker_new[new_path_group] = Ants(1, &ant);
             path_group_curors[new_path_group] = 0;
             ant.path_group = new_path_group;
+        } else if (!joined_existing_group) {
+            path_group_curors[ant.path_group] += 1;
         }
-
-        path_group_curors[ant.path_group] += 1;
 
         /**
          * If this next vertex is the food source, then
@@ -548,8 +552,10 @@ void aco::acs_mean_filtering::impl::do_iteration(size_t iteration, AntColony& an
     AntPathTracker ant_path_tracker_new;
     ant_path_tracker_new[0] = Ants(ant_colony.options.ant_count, nullptr);
     for (size_t ant_idx = 0; ant_idx < ant_colony.options.ant_count; ++ant_idx)
-        ant_path_tracker_new[0].push_back(&ant_colony.ants[ant_idx]);
+        ant_path_tracker_new[0][ant_idx] = &ant_colony.ants[ant_idx];
     AntPathTracker ant_path_tracker_old = AntPathTracker(ant_path_tracker_new);
+
+    static float entropy = 1.0f;
 
     /**
      * Calculate steps taken by ants in this iteration.
@@ -589,20 +595,31 @@ void aco::acs_mean_filtering::impl::do_iteration(size_t iteration, AntColony& an
          * If do_ant_next_step returns true, then that ant has just returned.
          */
         for (size_t ant_idx = 0; ant_idx < ant_colony.options.ant_count; ++ant_idx)
-            ants_returned += do_ant_next_step(iteration, ant_colony.ants[ant_idx], ant_colony, ant_path_tracker_old, ant_path_tracker_new, path_group_cursors) ? 1 : 0;
+            ants_returned += do_ant_next_step(
+                iteration,
+                ant_colony.ants[ant_idx],
+                ant_colony,
+                ant_path_tracker_old,
+                ant_path_tracker_new,
+                path_group_cursors,
+                entropy
+            ) ? 1 : 0;
 
-        AntPathTracker ant_path_tracker_old = AntPathTracker(ant_path_tracker_new);
+        ant_path_tracker_old = AntPathTracker(ant_path_tracker_new);
     }
 
     /**
      * Calculate entropy.
      */
-    float entropy = 0.0f;
+    entropy = 0.0f;
     for (auto& path_group : ant_path_tracker_old) {
         float popularity = (float)path_group.second.size() / (float)ant_colony.options.ant_count;
         entropy += popularity * log(popularity);
     }
     entropy /= log(1.0f / (float)ant_colony.options.ant_count);
+
+    if (iteration % 10 == 0)
+        std::cout << "Entropy on iteration " << iteration << ": " << entropy << std::endl;
 
     /**
      * Apply global updating rule.
