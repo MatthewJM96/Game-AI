@@ -1,8 +1,8 @@
 #include "aco/acs.h"
 
+#include <chrono>
 #include <iostream>
 #include <limits>
-#include <random>
 
 #include <libheatmap/heatmap.h>
 
@@ -25,9 +25,6 @@ static heatmap_stamp_t SQUARE_STAMP = {
 };
 
 float aco::acs::impl::rand(float min, float max) {
-    static std::default_random_engine            generator;
-    static std::uniform_real_distribution<float> distrib(0.0f, 1.0f);
-
     return min + max * distrib(generator);
 }
 
@@ -514,6 +511,11 @@ void aco::acs::impl::do_iteration(size_t iteration, AntColony& ant_colony) {
 }
 
 size_t aco::acs::do_simulation(GraphMap map, ACSOptions options) {
+    /**
+     * Seed RNG.
+     */
+    impl::generator.seed(std::chrono::system_clock::now().time_since_epoch().count());
+
     /**
      * Critical data points for simulation.
      */

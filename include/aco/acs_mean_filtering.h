@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <random>
+
 #include "dimension.hpp"
 #include "map/maze2d.h"
 
@@ -74,6 +76,9 @@ namespace aco {
         size_t do_simulation(GraphMap map, ACSOptions options);
 
         namespace impl {
+            static std::default_random_engine            generator;
+            static std::uniform_real_distribution<float> distrib(0.0f, 1.0f);
+
             inline float rand(float min, float max);
 
             inline void initialise_pheromones(AntColony& ant_colony);
