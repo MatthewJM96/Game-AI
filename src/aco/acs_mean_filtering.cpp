@@ -74,6 +74,8 @@ void aco::acs_mean_filtering::impl::reset_ants(AntColony& ant_colony) {
         ant.path_length = 0;
 
         ant.back_step_counter = 0;
+
+        ant.path_group = 0;
     }
 }
 
@@ -310,7 +312,7 @@ map::maze2d::VertexDescriptor aco::acs_mean_filtering::impl::choose_next_vertex(
      */
     float exploitation_val = rand(0.0f, 1.0f);
     if (exploitation_val < (iteration > 0 ? ant_colony.options.exploitation_factor : 0.0f)) {
-        // Reset backstep counter and return best choice.
+        // Reset backstep counter  and return best option.
         ant.back_step_counter = 0;
         return best_option.vertex;
     }
@@ -342,7 +344,14 @@ map::maze2d::VertexDescriptor aco::acs_mean_filtering::impl::choose_next_vertex(
     return ant.previous_vertices[ant.steps_taken - ant.back_step_counter];
 }
 
-bool aco::acs_mean_filtering::impl::do_ant_next_step(size_t iteration, Ant& ant, AntColony& ant_colony) {
+bool aco::acs_mean_filtering::impl::do_ant_next_step(
+    size_t            iteration,
+    Ant&              ant,
+    AntColony&        ant_colony,
+    AntPathTracker&   ant_path_tracker_old,
+    AntPathTracker&   ant_path_tracker_new,
+    PathGroupCursors& path_group_curors
+) {
     /**
      * Nothing to do if ant has done its tour.
      */
@@ -361,7 +370,7 @@ bool aco::acs_mean_filtering::impl::do_ant_next_step(size_t iteration, Ant& ant,
     }
 
     // TODO(Matthew): The local application of pheromone ONLY on return journey is
-    //                not as per the ACS_mean_filtering paper, but as we are interested only in shortest
+    //                not as per the ACS paper, but as we are interested only in shortest
     //                path from an initial vertex to a final, it feels like it ought
     //                to behave well.
     //                   The difference isn't too drastic though, as in principle an ant
@@ -417,7 +426,76 @@ bool aco::acs_mean_filtering::impl::do_ant_next_step(size_t iteration, Ant& ant,
         ant.previous_vertices[ant.steps_taken] = ant.current_vertex;
         ant.visited_vertices[next_vertex]      = true;
         ant.steps_taken                       += 1;
-        ant.current_vertex = next_vertex;
+        ant.current_vertex                     = next_vertex;
+
+        /**
+         * Check if ant has strayed from other ants in its group.
+         */
+        bool need_new_path_group = false;
+        for (size_t cursor = 0; cursor < path_group_curors[ant.path_group]; ++cursor) {
+            Ant& companion_ant = *ant_path_tracker_old[ant.path_group][cursor];
+
+            /**
+             * If we find an ant from this ant's previous path group who has moved to a new path group
+             * in this step, and both ants have moved to the same vertex, then we should put this current
+             * ant into the same path group.
+             *      We have to be careful about how we performed this change, notes below detail the logic
+             *      of how we ensure things don't go weird.
+             *      We break when we get here as we have found the appropriate path group.
+             */
+            if (   companion_ant.current_vertex == ant.current_vertex
+                    && companion_ant.path_group != ant.path_group      ) {
+                // Remove ant from previous path group.
+                //   It should be fine to just remove ant from previous path group like this as
+                //   it will be replaced in its position by an ant beyond the cursor for that path group.
+                std::remove(ant_path_tracker_new[ant.path_group].begin(), ant_path_tracker_new[ant.path_group].end(), &ant);
+                // Update ant's path group assignment.
+                ant.path_group = companion_ant.path_group;
+                // Make sure to put ant in path group at current point of that path group's cursor.
+                auto& path_group = ant_path_tracker_new[companion_ant.path_group];
+                path_group.push_back(path_group[path_group_curors[ant.path_group]]);
+                path_group[path_group_curors[ant.path_group]] = &ant;
+                // Ant no longer needs its own new path group.
+                need_new_path_group = false;
+                // Break out of search for new path group.
+                break;
+            }
+
+            /**
+             * If this current ant has moved to a different vertex as an ant who was previously
+             * in the same path group and who has already taken their step, then this current
+             * ant no longer can belong to the same path group and so should be marked to receive
+             * one.
+             *      We continue the loop however, in case another ant moved to the same vertex
+             *      as this current ant.
+             */
+            if (   companion_ant.current_vertex != ant.current_vertex
+                    && companion_ant.path_group == ant.path_group      ) {
+                need_new_path_group = true;
+            }
+        }
+
+        /**
+         * If this current ant is flagged as needing a new path group,
+         * then make it one and put it in it.
+         *      While we don't have to worry about how it gets into the new
+         *      path group, we still have to be careful of how it leaves its
+         *      old one.
+         */
+        if (need_new_path_group) {
+            size_t new_path_group = ant_path_tracker_new.size();
+
+            // Remove ant from previous path group.
+            //   It should be fine to just remove ant from previous path group like this as
+            //   it will be replaced in its position by an ant beyond the cursor for that path group.
+            std::remove(ant_path_tracker_new[ant.path_group].begin(), ant_path_tracker_new[ant.path_group].end(), &ant);
+
+            ant_path_tracker_new[new_path_group] = Ants(1, &ant);
+            path_group_curors[new_path_group] = 0;
+            ant.path_group = new_path_group;
+        }
+
+        path_group_curors[ant.path_group] += 1;
 
         /**
          * If this next vertex is the food source, then
@@ -455,6 +533,18 @@ void aco::acs_mean_filtering::impl::do_iteration(size_t iteration, AntColony& an
     reset_ants(ant_colony);
 
     /**
+     * Track which ants are on the same paths.
+     */
+    // TODO(Matthew): Not gonna make remotely good yet cos I really don't know
+    //                if this is the right way to go about tracking which ants
+    //                are on which paths for the iteration.
+    AntPathTracker ant_path_tracker_new;
+    ant_path_tracker_new[0] = Ants(ant_colony.options.ant_count, nullptr);
+    for (size_t ant_idx = 0; ant_idx < ant_colony.options.ant_count; ++ant_idx)
+        ant_path_tracker_new[0].push_back(&ant_colony.ants[ant_idx]);
+    AntPathTracker ant_path_tracker_old = AntPathTracker(ant_path_tracker_new);
+
+    /**
      * Calculate steps taken by ants in this iteration.
      */
     size_t ants_returned = 0;
@@ -463,6 +553,12 @@ void aco::acs_mean_filtering::impl::do_iteration(size_t iteration, AntColony& an
          * Break out early if ants are done for this iteration.
          */
         if (ants_returned >= ant_colony.options.ant_count) break;
+
+        /**
+         * Track how many ants in a path group have thus far
+         * taken a step.
+         */
+        PathGroupCursors path_group_cursors = PathGroupCursors(ant_colony.options.ant_count, 0);
 
         /**
          * Do some periodic output of state.
@@ -474,7 +570,7 @@ void aco::acs_mean_filtering::impl::do_iteration(size_t iteration, AntColony& an
             std::string numeric_code = std::to_string(iteration * (2 * ant_colony.options.max_steps) + step);
             if (numeric_code.size() < 10)
                 numeric_code.insert(0, 10 - numeric_code.size(), '0');
-            std::string file_part = "pngs/" + numeric_code + "." + ant_colony.options.tag + "." + std::to_string(iteration + 1) + "." + std::to_string(step + 1) + ".acs_mean_filtering";
+            std::string file_part = "pngs/" + numeric_code + "." + ant_colony.options.tag + "." + std::to_string(iteration + 1) + "." + std::to_string(step + 1) + ".acs";
 
             create_pheromone_heatmap_frame(file_part + ".pheromone", ant_colony);
             create_ant_count_heatmap_frame(file_part + ".ant_count", ant_colony);
@@ -486,7 +582,9 @@ void aco::acs_mean_filtering::impl::do_iteration(size_t iteration, AntColony& an
          * If do_ant_next_step returns true, then that ant has just returned.
          */
         for (size_t ant_idx = 0; ant_idx < ant_colony.options.ant_count; ++ant_idx)
-            ants_returned += do_ant_next_step(iteration, ant_colony.ants[ant_idx], ant_colony) ? 1 : 0;
+            ants_returned += do_ant_next_step(iteration, ant_colony.ants[ant_idx], ant_colony, ant_path_tracker_old, ant_path_tracker_new, path_group_cursors) ? 1 : 0;
+
+        AntPathTracker ant_path_tracker_old = AntPathTracker(ant_path_tracker_new);
     }
 
     /**
@@ -506,7 +604,7 @@ void aco::acs_mean_filtering::impl::do_iteration(size_t iteration, AntColony& an
     }
 }
 
-size_t aco::acs_mean_filtering::do_simulation(GraphMap map, ACS_mean_filteringOptions options) {
+size_t aco::acs_mean_filtering::do_simulation(GraphMap map, ACSOptions options) {
     /**
      * Critical data points for simulation.
      */

@@ -34,6 +34,7 @@ namespace aco {
             size_t       target_best_path_length;
             EdgeCostFunc edge_cost_func;
             bool         prefer_to_get_closer_to_dest;
+            size_t       mean_filtering_order; // The "neighbour of" order to go out to to calculate mean.
         };
 
         struct AntColony {
@@ -61,7 +62,13 @@ namespace aco {
             size_t path_length = 0;
 
             size_t back_step_counter = 0;
+
+            size_t path_group = 0;
         };
+
+        using Ants             = std::vector<Ant*>;
+        using AntPathTracker   = std::unordered_map<size_t, Ants>;
+        using PathGroupCursors = std::vector<size_t>;
 
         size_t do_simulation(GraphMap map, ACSOptions options);
 
@@ -84,7 +91,14 @@ namespace aco {
 
             inline VertexDescriptor choose_next_vertex(size_t iteration, Ant& ant, AntColony& ant_colony);
 
-            inline bool do_ant_next_step(size_t iteration, Ant& ant, AntColony& ant_colony);
+            inline bool do_ant_next_step(
+                size_t iteration,
+                Ant& ant,
+                AntColony& ant_colony,
+                AntPathTracker& ant_path_tracker_old,
+                AntPathTracker& ant_path_tracker_new,
+                PathGroupCursors& path_group_cursors
+            );
 
             inline void do_iteration(size_t iteration, AntColony& ant_colony);
         };
