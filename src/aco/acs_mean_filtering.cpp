@@ -601,8 +601,7 @@ void aco::acs_mean_filtering::impl::do_iteration(size_t iteration, AntColony& an
                 ant_colony,
                 ant_path_tracker_old,
                 ant_path_tracker_new,
-                path_group_cursors,
-                entropy
+                path_group_cursors
             ) ? 1 : 0;
 
         ant_path_tracker_old = AntPathTracker(ant_path_tracker_new);
