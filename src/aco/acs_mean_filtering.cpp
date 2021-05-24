@@ -1,11 +1,12 @@
 #include "aco/acs_mean_filtering.h"
 
+#include <iostream>
 #include <limits>
 #include <random>
 
 #include <libheatmap/heatmap.h>
 
-#include "image.hpp"
+#include "image.h"
 
 static float SQUARE_STAMP_DATA[] = {
     1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
