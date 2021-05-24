@@ -12,6 +12,7 @@
 #include "map/maze2d.h"
 
 #include "aco/acs.h"
+#include "aco/acs_dynamic_exploitation.h"
 
 void do_iteration_count_test() {
     const size_t map_dim_15       =   31;
@@ -120,7 +121,7 @@ void do_map_test(
     bool quit_on_ideal_path = false,
     bool do_output = true,
     size_t iterations = 1000,
-    aco::acs::ACSOptions::OutputFreq output_frequency = {
+    aco::acs_dynamic_exploitation::ACSOptions::OutputFreq output_frequency = {
         50, 1
     }
 ) {
@@ -150,7 +151,7 @@ void do_map_test(
     size_t num_vertices = boost::num_vertices(graph_map.graph);
     std::cout << "Num Vertices: " << num_vertices << std::endl;
 
-    const aco::acs::ACSOptions options {
+    const aco::acs_dynamic_exploitation::ACSOptions options {
         idx_str,
         iterations,
         halo_map.dims,
@@ -170,10 +171,11 @@ void do_map_test(
         output_frequency,
         quit_on_ideal_path ? graph_map.solution_length : 0,
         nullptr,
-        true
+        true,
+        1
     };
 
-    size_t iterations_to_ideal_solution = aco::acs::do_simulation(graph_map, options);
+    size_t iterations_to_ideal_solution = aco::acs_dynamic_exploitation::do_simulation(graph_map, options);
 
     if (quit_on_ideal_path)
         std::cout << "Achieved ideal solution after " << iterations_to_ideal_solution << " iterations." << std::endl;
@@ -188,7 +190,7 @@ int main() {
 
     do_map_test(51, 17, true, false);
 
-    do_map_test(101, 0, true, false);
+    // do_map_test(101, 0, true, false);
 
     // do_iteration_count_test();
 }
