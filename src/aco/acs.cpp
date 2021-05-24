@@ -167,7 +167,7 @@ void aco::acs::impl::create_ant_count_heatmap_frame(std::string filename, AntCol
 }
 
 void aco::acs::impl::set_new_best_path(Ant& ant, AntColony& ant_colony) {
-    std::cout << "Found new shortest path of length " << std::to_string(ant.path_length) << "." << std::endl;
+    // std::cout << "Found new shortest path of length " << std::to_string(ant.path_length) << "." << std::endl;
 
     AntColony::ShortestPath& best_path = ant_colony.shortest_path;
 

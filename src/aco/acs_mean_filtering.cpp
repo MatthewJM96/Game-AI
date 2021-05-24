@@ -170,7 +170,7 @@ void aco::acs_mean_filtering::impl::create_ant_count_heatmap_frame(std::string f
 }
 
 void aco::acs_mean_filtering::impl::set_new_best_path(Ant& ant, AntColony& ant_colony) {
-    std::cout << "Found new shortest path of length " << std::to_string(ant.path_length) << "." << std::endl;
+    // std::cout << "Found new shortest path of length " << std::to_string(ant.path_length) << "." << std::endl;
 
     AntColony::ShortestPath& best_path = ant_colony.shortest_path;
 
@@ -615,8 +615,8 @@ void aco::acs_mean_filtering::impl::do_iteration(size_t iteration, AntColony& an
     }
     entropy /= log(1.0f / (float)ant_colony.options.ant_count);
 
-    if (iteration % 10 == 0)
-        std::cout << "Entropy on iteration " << iteration << ": " << entropy << std::endl;
+    // if (iteration % 10 == 0)
+    //     std::cout << "Entropy on iteration " << iteration << ": " << entropy << std::endl;
 
     /**
      * Apply global updating rule.
