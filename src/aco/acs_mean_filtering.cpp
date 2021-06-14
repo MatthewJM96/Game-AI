@@ -86,7 +86,7 @@ void aco::acs_mean_filtering::impl::destroy_ants(AntColony& ant_colony) {
 void aco::acs_mean_filtering::impl::create_pheromone_heatmap_frame(std::string filename, AntColony& ant_colony) {
     size_t dim_x     = ant_colony.options.map_dimensions.x;
     size_t dim_y     = ant_colony.options.map_dimensions.y;
-    size_t ant_count = ant_colony.options.ant_count;
+    // size_t ant_count = ant_colony.options.ant_count;
 
     // * 10 per dimension to give something less tiny as heatmap.
     heatmap_t* heatmap = heatmap_new(dim_x * 10, dim_y * 10);
@@ -136,7 +136,7 @@ void aco::acs_mean_filtering::impl::create_ant_count_heatmap_frame(std::string f
     // * 10 per dimension to give something less tiny as heatmap.
     heatmap_t* heatmap = heatmap_new(dim_x * 10, dim_y * 10);
 
-    map::maze2d::GraphMap& map = ant_colony.map;
+    // map::maze2d::GraphMap& map = ant_colony.map;
 
     for (size_t idx = 0; idx < (dim_x * dim_y); ++idx) {
         if (ant_colony.map.map_idx_to_vertex_map.find(idx) == ant_colony.map.map_idx_to_vertex_map.end()) {
@@ -244,7 +244,7 @@ map::maze2d::VertexDescriptor aco::acs_mean_filtering::impl::choose_next_vertex(
 
         if (ant_colony.options.prefer_to_get_closer_to_dest) {
             size_t dim_x     = ant_colony.options.map_dimensions.x;
-            size_t dim_y     = ant_colony.options.map_dimensions.y;
+            // size_t dim_y     = ant_colony.options.map_dimensions.y;
 
             size_t current_tile_idx   = ant_colony.map.vertex_to_map_idx_map[ant.current_vertex];
             size_t candidate_tile_idx = ant_colony.map.vertex_to_map_idx_map[candidate_vertex];

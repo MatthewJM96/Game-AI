@@ -38,7 +38,7 @@ map::maze2d::Map map::maze2d::load_map(std::string map_filepath, Map2DDimensions
     // Increment solution length one more time to get to end tile.
     map.solution_length += 1;
 
-    return std::move(map);
+    return map;
 }
 
 
@@ -92,7 +92,7 @@ map::maze2d::Map map::maze2d::load_map_with_halo(std::string map_filepath, Map2D
     // Increment solution length one more time to get to end tile.
     halo_map.solution_length += 1;
 
-    return std::move(halo_map);
+    return halo_map;
 }
 
 void map::maze2d::print_map(const Map& map) {
@@ -138,12 +138,12 @@ map::maze2d::GraphMap map::maze2d::impl::halo_map_to_graph(Map map, float initia
         // Ugly!
         try {
             if (nodes_visited.at(target_node)) return;
-        } catch (std::exception) { /* Empty */ }
+        } catch (std::exception&) { /* Empty */ }
 
         VertexDescriptor v_target;
         try {
             v_target = graph_map.map_idx_to_vertex_map.at(target_node);
-        } catch (std::exception) {
+        } catch (std::exception&) {
             v_target = boost::add_vertex(graph_map.graph);
         }
         VertexDescriptor v_origin = graph_map.map_idx_to_vertex_map[origin_node];
@@ -212,7 +212,7 @@ map::maze2d::GraphMap map::maze2d::impl::halo_map_to_graph(Map map, float initia
 }
 
 
-map::maze2d::GraphMap map::maze2d::impl::non_halo_map_to_graph(Map map, float initial_weight) {
+map::maze2d::GraphMap map::maze2d::impl::non_halo_map_to_graph(Map map, float initial_weight [[maybe_unused]]) {
     GraphMap graph_map;
 
     graph_map.start_vertex  = map.start_idx;
