@@ -1,4 +1,5 @@
 #include <iostream>
+#include <filesystem>
 #include <fstream>
 #include <string>
 #include <iterator>
@@ -55,6 +56,7 @@ void do_iteration_count_test() {
             global_pheromone_evaporation
         },
         false,
+        "",
         output_frequency,
         0,
         nullptr,
@@ -169,6 +171,7 @@ void do_map_test(
             global_pheromone_evaporation
         },
         do_output,
+        "pngs",
         output_frequency,
         quit_on_ideal_path ? graph_map.solution_length : 0,
         nullptr,
@@ -190,7 +193,7 @@ TestResults do_acs_comparisons(
     bool quit_on_ideal_path   = false,
     bool do_output            = true,
     size_t iterations         = 1000,
-    size_t coarse_output_freq = 50,
+    size_t coarse_output_freq = 2,
     size_t fine_output_freq   = 1
 ) {
     size_t ant_count     =   10;
@@ -213,8 +216,12 @@ TestResults do_acs_comparisons(
 
     map::maze2d::Map halo_map;
 
-    size_t half_dim = ((map_dim - 1) / 2);
-    halo_map = map::maze2d::load_map_with_halo("maps/" + std::to_string(half_dim) + "." + idx_str + ".solved.map", {map_dim, map_dim});
+    std::string half_dim = std::to_string((map_dim - 1) / 2);
+    halo_map = map::maze2d::load_map_with_halo("maps/" + half_dim + "." + idx_str + ".solved.map", {map_dim, map_dim});
+
+    std::filesystem::create_directories("results/pngs/acs/" + half_dim + "." + idx_str);
+    std::filesystem::create_directories("results/pngs/acs_de/" + half_dim + "." + idx_str);
+    std::filesystem::create_directories("results/pngs/acs_mf/" + half_dim + "." + idx_str);
 
     // std::cout << "Map " << map_idx + 1 << " of dim " << half_dim << " maps, with ideal solution length " << halo_map.solution_length << ":\n" << std::endl;
 
@@ -245,6 +252,7 @@ TestResults do_acs_comparisons(
             global_pheromone_evaporation
         },
         do_output,
+        "pngs/acs/" + half_dim + "." + idx_str,
         {
             coarse_output_freq,
             fine_output_freq
@@ -270,6 +278,7 @@ TestResults do_acs_comparisons(
             global_pheromone_evaporation
         },
         do_output,
+        "pngs/acs_de/" + half_dim + "." + idx_str,
         {
             coarse_output_freq,
             fine_output_freq
@@ -296,6 +305,7 @@ TestResults do_acs_comparisons(
             global_pheromone_evaporation
         },
         do_output,
+        "pngs/acs_mf/" + half_dim + "." + idx_str,
         {
             coarse_output_freq,
             fine_output_freq
@@ -335,7 +345,8 @@ int main() {
             0, 0, 0
         };
         for (size_t i = 0; i < iterations; ++i) {
-            TestResults it_result = do_acs_comparisons(map_dim,  map_idx, true, false);
+            // Only output one of the iterations as a representative case.
+            TestResults it_result = do_acs_comparisons(map_dim,  map_idx, true, i == 0);
 
             results.acs                      += it_result.acs;
             results.acs_dynamic_exploitation += it_result.acs_dynamic_exploitation;
@@ -366,7 +377,7 @@ int main() {
     run_test(51, 17);
     run_test(51, 18);
     run_test(51, 19);
-    run_test(101, 0);
+    // run_test(101, 0);
 
     // do_map_test(101, 0, true, false);
 

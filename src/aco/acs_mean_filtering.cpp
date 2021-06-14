@@ -578,14 +578,14 @@ void aco::acs_mean_filtering::impl::do_iteration(size_t iteration, AntColony& an
         /**
          * Do some periodic output of state.
          */
-        if (                ant_colony.options.do_output
-             && iteration % ant_colony.options.output_frequency.coarse == 0
-                  && step % ant_colony.options.output_frequency.fine == 0
+        if (                  ant_colony.options.do_output
+             && (iteration % ant_colony.options.output_frequency.coarse) == 0
+                  && (step % ant_colony.options.output_frequency.fine) == 0
         ) {
             std::string numeric_code = std::to_string(iteration * (2 * ant_colony.options.max_steps) + step);
             if (numeric_code.size() < 10)
                 numeric_code.insert(0, 10 - numeric_code.size(), '0');
-            std::string file_part = "pngs/" + numeric_code + "." + ant_colony.options.tag + "." + std::to_string(iteration + 1) + "." + std::to_string(step + 1) + ".acs";
+            std::string file_part = ant_colony.options.output_dir + "/" + numeric_code + "." + ant_colony.options.tag + "." + std::to_string(iteration + 1) + "." + std::to_string(step + 1) + ".acs";
 
             create_pheromone_heatmap_frame(file_part + ".pheromone", ant_colony);
             create_ant_count_heatmap_frame(file_part + ".ant_count", ant_colony);

@@ -30,6 +30,7 @@ namespace aco {
                 float evaporation;
             } local, global;
             bool do_output;
+            std::string output_dir;
             struct OutputFreq {
                 size_t coarse, fine;
             } output_frequency;
