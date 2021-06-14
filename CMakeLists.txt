@@ -23,9 +23,14 @@ add_executable(Game_AI
 )
 
 target_include_directories(Game_AI
+    SYSTEM
+    PUBLIC
+    "${PROJECT_SOURCE_DIR}/deps"
+)
+
+target_include_directories(Game_AI
     PUBLIC
     "${PROJECT_SOURCE_DIR}/include"
-    "${PROJECT_SOURCE_DIR}/deps"
 )
 
 target_link_libraries(Game_AI
