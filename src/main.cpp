@@ -349,7 +349,9 @@ int main() {
 
     const std::string output_dir = "/media/data/matthewm/Workspace_Data/Game-AI";
 
-    auto run_test = [output_dir](size_t map_dim, size_t map_idx, size_t iterations = 100) {
+    std::ofstream overall_results = std::ofstream(output_dir + "/results.csv");
+
+    auto run_test = [output_dir, &overall_results](size_t map_dim, size_t map_idx, size_t iterations = 100) {
         TestResults results = {
             {
                 std::vector<size_t>(iterations, 0),
@@ -426,12 +428,18 @@ int main() {
         calc_stdev(results.acs_dynamic_exploitation);
         calc_stdev(results.acs_mean_filtering);
 
-        const auto print_results = [](const TestResults::ForMethod& results, std::string method) {
+        const auto output_results = [&overall_results](const TestResults::ForMethod& results, std::string method) {
             std::cout << method << " achieved an ideal solution with:\n"
                       << "    an average of:      " << results.avg   << " iterations;\n"
                       << "    a std deviation of: " << results.stdev << " iterations;\n"
                       << "    a max of:           " << results.max   << " iterations; and,\n"
                       << "    a min of:           " << results.min   << " iterations." << std::endl;
+
+            overall_results << results.avg << ", " << results.stdev << ", " << results.max << ", " << results.min;
+            for (size_t value : results.values) {
+                overall_results << ", " << value;
+            }
+            overall_results << "\n";
         };
 
         print_results(results.acs, "ACS");
