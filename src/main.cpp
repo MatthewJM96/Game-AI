@@ -347,9 +347,9 @@ int main() {
 
     // do_map_test(51, 17, true, false);
 
-    const std::string output_dir = "/media/data/matthewm/Workspace_Data/Game-AI"
+    const std::string output_dir = "/media/data/matthewm/Workspace_Data/Game-AI";
 
-    auto run_test = [](size_t map_dim, size_t map_idx, size_t iterations = 100) {
+    auto run_test = [output_dir](size_t map_dim, size_t map_idx, size_t iterations = 100) {
         TestResults results = {
             {
                 std::vector<size_t>(iterations, 0),
