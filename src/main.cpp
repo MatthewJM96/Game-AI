@@ -185,9 +185,15 @@ void do_map_test(
 }
 
 struct TestResults {
+    struct ForMethod {
+        std::vector<size_t> values;
+        size_t total, avg, stdev, max, min;
+    } acs, acs_dynamic_exploitation, acs_mean_filtering;
+};
+struct IntermediateTestResults {
     size_t acs, acs_dynamic_exploitation, acs_mean_filtering;
 };
-TestResults do_acs_comparisons(
+IntermediateTestResults do_acs_comparisons(
     size_t map_dim,
     size_t map_idx,
     bool quit_on_ideal_path   = false,
@@ -342,19 +348,92 @@ int main() {
 
     auto run_test = [](size_t map_dim, size_t map_idx, size_t iterations = 100) {
         TestResults results = {
-            0, 0, 0
+            {
+                std::vector<size_t>(iterations, 0),
+                0, 0, 0,
+                std::numeric_limits<size_t>::min(),
+                std::numeric_limits<size_t>::max()
+            },
+            {
+                std::vector<size_t>(iterations, 0),
+                0, 0, 0,
+                std::numeric_limits<size_t>::min(),
+                std::numeric_limits<size_t>::max()
+            },
+            {
+                std::vector<size_t>(iterations, 0),
+                0, 0, 0,
+                std::numeric_limits<size_t>::min(),
+                std::numeric_limits<size_t>::max()
+            }
         };
         for (size_t i = 0; i < iterations; ++i) {
             // Only output one of the iterations as a representative case.
-            TestResults it_result = do_acs_comparisons(map_dim,  map_idx, true, i == 0);
+            // IntermediateTestResults it_result = do_acs_comparisons(map_dim,  map_idx, true, i == 0);
+            IntermediateTestResults it_result = do_acs_comparisons(map_dim,  map_idx, true, false);
 
-            results.acs                      += it_result.acs;
-            results.acs_dynamic_exploitation += it_result.acs_dynamic_exploitation;
-            results.acs_mean_filtering       += it_result.acs_mean_filtering;
+            results.acs.values[i]                       = it_result.acs;
+            results.acs.total                          += it_result.acs;
+            results.acs_dynamic_exploitation.values[i]  = it_result.acs_dynamic_exploitation;
+            results.acs_dynamic_exploitation.total     += it_result.acs_dynamic_exploitation;
+            results.acs_mean_filtering.values[i]        = it_result.acs_mean_filtering;
+            results.acs_mean_filtering.total           += it_result.acs_mean_filtering;
+
+            if (results.acs.max < it_result.acs) {
+                results.acs.max = it_result.acs;
+            }
+            if (results.acs_dynamic_exploitation.max < it_result.acs_dynamic_exploitation) {
+                results.acs_dynamic_exploitation.max = it_result.acs_dynamic_exploitation;
+            }
+            if (results.acs_mean_filtering.max < it_result.acs_mean_filtering) {
+                results.acs_mean_filtering.max = it_result.acs_mean_filtering;
+            }
+
+            if (results.acs.min > it_result.acs) {
+                results.acs.min = it_result.acs;
+            }
+            if (results.acs_dynamic_exploitation.min > it_result.acs_dynamic_exploitation) {
+                results.acs_dynamic_exploitation.min = it_result.acs_dynamic_exploitation;
+            }
+            if (results.acs_mean_filtering.min > it_result.acs_mean_filtering) {
+                results.acs_mean_filtering.min = it_result.acs_mean_filtering;
+            }
         }
-        std::cout << "ACS achieved ideal solution after "                           << results.acs                      / iterations << " iterations." << std::endl;
-        std::cout << "ACS with dynamic exploitation achieved ideal solution after " << results.acs_dynamic_exploitation / iterations << " iterations." << std::endl;
-        std::cout << "ACS with mean filtering achieved ideal solution after "       << results.acs_mean_filtering       / iterations << " iterations." << std::endl;
+
+        results.acs.avg                      = results.acs.total                      / iterations;
+        results.acs_dynamic_exploitation.avg = results.acs_dynamic_exploitation.total / iterations;
+        results.acs_mean_filtering.avg       = results.acs_mean_filtering.total       / iterations;
+
+        const auto calc_stdev = [](TestResults::ForMethod& results) {
+            size_t avg = results.avg;
+
+            std::vector<size_t> diff(results.values.size());
+            std::transform(
+                results.values.begin(),
+                results.values.end(),
+                diff.begin(),
+                [avg](size_t val) { return val - avg; }
+            );
+            size_t sq_sum = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0);
+
+            results.stdev = std::sqrt(sq_sum / results.values.size());
+        };
+
+        calc_stdev(results.acs);
+        calc_stdev(results.acs_dynamic_exploitation);
+        calc_stdev(results.acs_mean_filtering);
+
+        const auto print_results = [](const TestResults::ForMethod& results, std::string method) {
+            std::cout << method << " achieved an ideal solution with:\n"
+                      << "    an average of:      " << results.avg   << " iterations;\n"
+                      << "    a std deviation of: " << results.stdev << " iterations;\n"
+                      << "    a max of:           " << results.max   << " iterations; and,\n"
+                      << "    a min of:           " << results.min   << " iterations." << std::endl;
+        };
+
+        print_results(results.acs, "ACS");
+        print_results(results.acs_dynamic_exploitation, "ACS with dynamic exploitation");
+        print_results(results.acs_mean_filtering, "ACS with mean filtering");
     };
 
     run_test(51,  0);
