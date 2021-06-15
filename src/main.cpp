@@ -196,6 +196,7 @@ struct IntermediateTestResults {
 IntermediateTestResults do_acs_comparisons(
     size_t map_dim,
     size_t map_idx,
+    std::string output_dir,
     bool quit_on_ideal_path   = false,
     bool do_output            = true,
     size_t iterations         = 1000,
@@ -225,9 +226,9 @@ IntermediateTestResults do_acs_comparisons(
     std::string half_dim = std::to_string((map_dim - 1) / 2);
     halo_map = map::maze2d::load_map_with_halo("maps/" + half_dim + "." + idx_str + ".solved.map", {map_dim, map_dim});
 
-    std::filesystem::create_directories("results/pngs/acs/" + half_dim + "." + idx_str);
-    std::filesystem::create_directories("results/pngs/acs_de/" + half_dim + "." + idx_str);
-    std::filesystem::create_directories("results/pngs/acs_mf/" + half_dim + "." + idx_str);
+    std::filesystem::create_directories(output_dir + "/acs/" + half_dim + "." + idx_str);
+    std::filesystem::create_directories(output_dir + "/acs_de/" + half_dim + "." + idx_str);
+    std::filesystem::create_directories(output_dir + "/acs_mf/" + half_dim + "." + idx_str);
 
     // std::cout << "Map " << map_idx + 1 << " of dim " << half_dim << " maps, with ideal solution length " << halo_map.solution_length << ":\n" << std::endl;
 
@@ -258,7 +259,7 @@ IntermediateTestResults do_acs_comparisons(
             global_pheromone_evaporation
         },
         do_output,
-        "pngs/acs/" + half_dim + "." + idx_str,
+        output_dir + "/acs/" + half_dim + "." + idx_str,
         {
             coarse_output_freq,
             fine_output_freq
@@ -284,7 +285,7 @@ IntermediateTestResults do_acs_comparisons(
             global_pheromone_evaporation
         },
         do_output,
-        "pngs/acs_de/" + half_dim + "." + idx_str,
+        output_dir + "/acs_de/" + half_dim + "." + idx_str,
         {
             coarse_output_freq,
             fine_output_freq
@@ -311,7 +312,7 @@ IntermediateTestResults do_acs_comparisons(
             global_pheromone_evaporation
         },
         do_output,
-        "pngs/acs_mf/" + half_dim + "." + idx_str,
+        output_dir + "/acs_mf/" + half_dim + "." + idx_str,
         {
             coarse_output_freq,
             fine_output_freq
@@ -346,6 +347,8 @@ int main() {
 
     // do_map_test(51, 17, true, false);
 
+    const std::string output_dir = "/media/data/matthewm/Workspace_Data/Game-AI"
+
     auto run_test = [](size_t map_dim, size_t map_idx, size_t iterations = 100) {
         TestResults results = {
             {
@@ -369,8 +372,8 @@ int main() {
         };
         for (size_t i = 0; i < iterations; ++i) {
             // Only output one of the iterations as a representative case.
-            // IntermediateTestResults it_result = do_acs_comparisons(map_dim,  map_idx, true, i == 0);
-            IntermediateTestResults it_result = do_acs_comparisons(map_dim,  map_idx, true, false);
+            // IntermediateTestResults it_result = do_acs_comparisons(map_dim,  map_idx, output_dir, true, i == 0);
+            IntermediateTestResults it_result = do_acs_comparisons(map_dim,  map_idx, output_dir, true, false);
 
             results.acs.values[i]                       = it_result.acs;
             results.acs.total                          += it_result.acs;

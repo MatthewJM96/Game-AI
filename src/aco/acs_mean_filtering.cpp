@@ -125,7 +125,7 @@ void aco::acs_mean_filtering::impl::create_pheromone_heatmap_frame(std::string f
 
     heatmap_free(heatmap);
 
-    image::writepng("results/" + filename + ".png", image_data, dim_x * 10, dim_y * 10);
+    image::writepng(filename + ".png", image_data, dim_x * 10, dim_y * 10);
 
     delete[] image_data;
 }
@@ -168,7 +168,7 @@ void aco::acs_mean_filtering::impl::create_ant_count_heatmap_frame(std::string f
 
     heatmap_free(heatmap);
 
-    image::writepng("results/" + filename + ".png", image_data, dim_x * 10, dim_y * 10);
+    image::writepng(filename + ".png", image_data, dim_x * 10, dim_y * 10);
 
     delete[] image_data;
 }
