@@ -15,6 +15,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g")
 
 add_executable(Game_AI
     "${PROJECT_SOURCE_DIR}/src/main.cpp"
+    "${PROJECT_SOURCE_DIR}/src/heatmap.cpp"
     "${PROJECT_SOURCE_DIR}/src/image.cpp"
     "${PROJECT_SOURCE_DIR}/src/map/maze2d.cpp"
     "${PROJECT_SOURCE_DIR}/src/aco/acs.cpp"
