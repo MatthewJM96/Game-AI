@@ -442,9 +442,9 @@ int main() {
             overall_results << "\n";
         };
 
-        print_results(results.acs, "ACS");
-        print_results(results.acs_dynamic_exploitation, "ACS with dynamic exploitation");
-        print_results(results.acs_mean_filtering, "ACS with mean filtering");
+        output_results(results.acs, "ACS");
+        output_results(results.acs_dynamic_exploitation, "ACS with dynamic exploitation");
+        output_results(results.acs_mean_filtering, "ACS with mean filtering");
     };
 
     run_test(51,  0);
