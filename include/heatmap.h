@@ -16,16 +16,22 @@ namespace heatmap {
         Heatmaps   heatmaps;
     };
 
-    void create_protoheatmap_from_map(HeatmapData& data, const map::maze2d::Map& map);
+    void create_protoheatmap_from_map(HeatmapData& heatmap_data, const map::maze2d::Map& map);
 
-    void apply_weighted_point(HeatmapData& data, size_t idx, size_t x_coord, size_t y_coord, float weight);
+    void apply_point(HeatmapData& heatmap_data, size_t idx, size_t x_coord, size_t y_coord);
+
+    void apply_weighted_point(HeatmapData& heatmap_data, size_t idx, size_t x_coord, size_t y_coord, float weight);
+
+    void print_heatmaps(HeatmapData& heatmap_data, std::string output_dir, std::string tag);
+
+    void free_heatmaps(HeatmapData& heatmap_data);
 
     namespace impl {
-        heatmap_t* get_heatmap(HeatmapData& data, size_t idx);
+        heatmap_t* get_heatmap(HeatmapData& heatmap_data, size_t idx);
 
         heatmap_t* make_new_heatmap(heatmap_t* protoheatmap);
 
-        void overlay_walls(heatmap_t* protoheatmap, heatmap_t* target_heatmap);
+        void overlay_walls(heatmap_t* protoheatmap, heatmap_t* target_heatmap, float saturation);
     };
 };
 

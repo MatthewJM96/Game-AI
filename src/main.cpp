@@ -9,6 +9,7 @@
 #include <boost/graph/graphviz.hpp>
 
 #include "constants.h"
+#include "heatmap.h"
 
 #include "map/maze2d.h"
 
@@ -193,17 +194,43 @@ struct TestResults {
 struct IntermediateTestResults {
     size_t acs, acs_dynamic_exploitation, acs_mean_filtering;
 };
-IntermediateTestResults do_acs_comparisons(
-    size_t map_dim,
-    size_t map_idx,
+TestResults do_acs_comparisons(
+    size_t      map_dim,
+    size_t      map_idx,
     std::string output_dir,
-    bool quit_on_ideal_path   = false,
-    bool do_output            = true,
-    size_t iterations         = 1000,
-    size_t coarse_output_freq = 2,
-    size_t fine_output_freq   = 1
+    size_t      iterations,
+    bool        quit_on_ideal_path = false,
+    bool        do_output          = true,
+    size_t      sim_iterations     = 500,
+    size_t      coarse_output_freq = 2,
+    size_t      fine_output_freq   = 36
 ) {
-    size_t ant_count     =   10;
+    /************************************\
+     *           General Data           *
+    \************************************/
+
+    TestResults results = {
+        {
+            std::vector<size_t>(iterations, 0),
+            0, 0, 0,
+            std::numeric_limits<size_t>::min(),
+            std::numeric_limits<size_t>::max()
+        },
+        {
+            std::vector<size_t>(iterations, 0),
+            0, 0, 0,
+            std::numeric_limits<size_t>::min(),
+            std::numeric_limits<size_t>::max()
+        },
+        {
+            std::vector<size_t>(iterations, 0),
+            0, 0, 0,
+            std::numeric_limits<size_t>::min(),
+            std::numeric_limits<size_t>::max()
+        }
+    };
+
+    size_t ant_count = 10;
 
     float global_pheromone_increment   = 1.0f; // Global increment (best ant in round or all rounds).
     float global_pheromone_evaporation = 0.1f; // Global decrement on each node per round.
@@ -218,21 +245,52 @@ IntermediateTestResults do_acs_comparisons(
     size_t mean_filtering_order   = 1;
     float  mean_filtering_trigger = 0.5f;
 
-
     std::string idx_str = std::to_string(map_idx);
+
+    /************************************\
+     *             Load Map             *
+    \************************************/
 
     map::maze2d::Map halo_map;
 
     std::string half_dim = std::to_string((map_dim - 1) / 2);
     halo_map = map::maze2d::load_map_with_halo("maps/" + half_dim + "." + idx_str + ".solved.map", {map_dim, map_dim});
 
+    /************************************\
+     *          Prep Heatmaps           *
+    \************************************/
+
+    heatmap::HeatmapData pheromone_heatmap_data_1 = { nullptr, heatmap::Heatmaps() };
+    heatmap::HeatmapData pheromone_heatmap_data_2 = { nullptr, heatmap::Heatmaps() };
+    heatmap::HeatmapData pheromone_heatmap_data_3 = { nullptr, heatmap::Heatmaps() };
+
+    heatmap::HeatmapData ant_count_heatmap_data_1 = { nullptr, heatmap::Heatmaps() };
+    heatmap::HeatmapData ant_count_heatmap_data_2 = { nullptr, heatmap::Heatmaps() };
+    heatmap::HeatmapData ant_count_heatmap_data_3 = { nullptr, heatmap::Heatmaps() };
+
+    heatmap::create_protoheatmap_from_map(pheromone_heatmap_data_1, halo_map);
+    heatmap::create_protoheatmap_from_map(pheromone_heatmap_data_2, halo_map);
+    heatmap::create_protoheatmap_from_map(pheromone_heatmap_data_3, halo_map);
+
+    heatmap::create_protoheatmap_from_map(ant_count_heatmap_data_1, halo_map);
+    heatmap::create_protoheatmap_from_map(ant_count_heatmap_data_2, halo_map);
+    heatmap::create_protoheatmap_from_map(ant_count_heatmap_data_3, halo_map);
+
+    /************************************\
+     *           Prep Output            *
+    \************************************/
+
     std::filesystem::create_directories(output_dir + "/acs/" + half_dim + "." + idx_str);
     std::filesystem::create_directories(output_dir + "/acs_de/" + half_dim + "." + idx_str);
     std::filesystem::create_directories(output_dir + "/acs_mf/" + half_dim + "." + idx_str);
 
-    // std::cout << "Map " << map_idx + 1 << " of dim " << half_dim << " maps, with ideal solution length " << halo_map.solution_length << ":\n" << std::endl;
+    std::string acs_output    = output_dir + "/acs/"    + half_dim + "." + idx_str;
+    std::string acs_de_output = output_dir + "/acs_de/" + half_dim + "." + idx_str;
+    std::string acs_mf_output = output_dir + "/acs_mf/" + half_dim + "." + idx_str;
 
-    // map::maze2d::print_map(halo_map);
+    /************************************\
+     *       Convert Map to Graph       *
+    \************************************/
 
     // Need a copy for each method - they change the state inside and lets be sure there's no accidental overlap.
     map::maze2d::GraphMap graph_map_1 = map::maze2d::map_to_graph(halo_map, 1.0f);
@@ -242,9 +300,13 @@ IntermediateTestResults do_acs_comparisons(
     size_t num_vertices = boost::num_vertices(graph_map_1.graph);
     // std::cout << "Num Vertices: " << num_vertices << std::endl;
 
+    /************************************\
+     *           Prep Options           *
+    \************************************/
+
     const aco::acs::ACSOptions options_1 {
         idx_str,
-        iterations,
+        sim_iterations,
         halo_map.dims,
         num_vertices,
         ant_count,
@@ -259,7 +321,7 @@ IntermediateTestResults do_acs_comparisons(
             global_pheromone_evaporation
         },
         do_output,
-        output_dir + "/acs/" + half_dim + "." + idx_str,
+        acs_output,
         {
             coarse_output_freq,
             fine_output_freq
@@ -270,7 +332,7 @@ IntermediateTestResults do_acs_comparisons(
     };
     const aco::acs_dynamic_exploitation::ACSOptions options_2 {
         idx_str,
-        iterations,
+        sim_iterations,
         halo_map.dims,
         num_vertices,
         ant_count,
@@ -285,7 +347,7 @@ IntermediateTestResults do_acs_comparisons(
             global_pheromone_evaporation
         },
         do_output,
-        output_dir + "/acs_de/" + half_dim + "." + idx_str,
+        acs_de_output,
         {
             coarse_output_freq,
             fine_output_freq
@@ -297,7 +359,7 @@ IntermediateTestResults do_acs_comparisons(
     };
     const aco::acs_mean_filtering::ACSOptions options_3 {
         idx_str,
-        iterations,
+        sim_iterations,
         halo_map.dims,
         num_vertices,
         ant_count,
@@ -312,7 +374,7 @@ IntermediateTestResults do_acs_comparisons(
             global_pheromone_evaporation
         },
         do_output,
-        output_dir + "/acs_mf/" + half_dim + "." + idx_str,
+        acs_mf_output,
         {
             coarse_output_freq,
             fine_output_freq
@@ -324,18 +386,119 @@ IntermediateTestResults do_acs_comparisons(
         mean_filtering_trigger
     };
 
-    size_t iterations_to_ideal_solution_1 = aco::acs::do_simulation(graph_map_1, options_1);
-    size_t iterations_to_ideal_solution_2 = aco::acs_dynamic_exploitation::do_simulation(graph_map_2, options_2);
-    size_t iterations_to_ideal_solution_3 = aco::acs_mean_filtering::do_simulation(graph_map_3, options_3);
+    /************************************\
+     *        Do Simulation Runs        *
+    \************************************/
 
-    return {
-        iterations_to_ideal_solution_1,
-        iterations_to_ideal_solution_2,
-        iterations_to_ideal_solution_3
+    for (size_t i = 0; i < iterations; ++i) {
+        IntermediateTestResults it_result = {};
+        it_result.acs                      = aco::acs::do_simulation(graph_map_1, options_1, &pheromone_heatmap_data_1, &ant_count_heatmap_data_1);
+        it_result.acs_dynamic_exploitation = aco::acs_dynamic_exploitation::do_simulation(graph_map_2, options_2, &pheromone_heatmap_data_2, &ant_count_heatmap_data_2);
+        it_result.acs_mean_filtering       = aco::acs_mean_filtering::do_simulation(graph_map_3, options_3, &pheromone_heatmap_data_3, &ant_count_heatmap_data_3);
+
+        results.acs.values[i]                       = it_result.acs;
+        results.acs.total                          += it_result.acs;
+        results.acs_dynamic_exploitation.values[i]  = it_result.acs_dynamic_exploitation;
+        results.acs_dynamic_exploitation.total     += it_result.acs_dynamic_exploitation;
+        results.acs_mean_filtering.values[i]        = it_result.acs_mean_filtering;
+        results.acs_mean_filtering.total           += it_result.acs_mean_filtering;
+
+        if (results.acs.max < it_result.acs) {
+            results.acs.max = it_result.acs;
+        }
+        if (results.acs_dynamic_exploitation.max < it_result.acs_dynamic_exploitation) {
+            results.acs_dynamic_exploitation.max = it_result.acs_dynamic_exploitation;
+        }
+        if (results.acs_mean_filtering.max < it_result.acs_mean_filtering) {
+            results.acs_mean_filtering.max = it_result.acs_mean_filtering;
+        }
+
+        if (results.acs.min > it_result.acs) {
+            results.acs.min = it_result.acs;
+        }
+        if (results.acs_dynamic_exploitation.min > it_result.acs_dynamic_exploitation) {
+            results.acs_dynamic_exploitation.min = it_result.acs_dynamic_exploitation;
+        }
+        if (results.acs_mean_filtering.min > it_result.acs_mean_filtering) {
+            results.acs_mean_filtering.min = it_result.acs_mean_filtering;
+        }
+    }
+
+    /************************************\
+     *    Calculate Derived Results     *
+    \************************************/
+
+    results.acs.avg                      = results.acs.total                      / iterations;
+    results.acs_dynamic_exploitation.avg = results.acs_dynamic_exploitation.total / iterations;
+    results.acs_mean_filtering.avg       = results.acs_mean_filtering.total       / iterations;
+
+    const auto calc_stdev = [](TestResults::ForMethod& results) {
+        size_t avg = results.avg;
+
+        std::vector<size_t> diff(results.values.size());
+        std::transform(
+            results.values.begin(),
+            results.values.end(),
+            diff.begin(),
+            [avg](size_t val) { return val - avg; }
+        );
+        size_t sq_sum = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0);
+
+        results.stdev = std::sqrt(sq_sum / results.values.size());
     };
-        // std::cout << "ACS achieved ideal solution after " << iterations_to_ideal_solution_1 << " iterations." << std::endl;
-        // std::cout << "ACS with dynamic exploitation achieved ideal solution after " << iterations_to_ideal_solution_2 << " iterations." << std::endl;
-        // std::cout << "ACS with mean filtering achieved ideal solution after " << iterations_to_ideal_solution_3 << " iterations." << std::endl;
+
+    calc_stdev(results.acs);
+    calc_stdev(results.acs_dynamic_exploitation);
+    calc_stdev(results.acs_mean_filtering);
+
+    /************************************\
+     *          Output Results          *
+    \************************************/
+
+    std::ofstream overall_results = std::ofstream(output_dir + "/results.csv", std::ios_base::app);
+
+    auto output_results = [&overall_results, half_dim, idx_str](const TestResults::ForMethod& results, std::string method) {
+        std::cout << "    " << method << " achieved an ideal solution with:\n"
+                    << "        an average of:      " << results.avg   << " iterations;\n"
+                    << "        a std deviation of: " << results.stdev << " iterations;\n"
+                    << "        a max of:           " << results.max   << " iterations; and,\n"
+                    << "        a min of:           " << results.min   << " iterations." << std::endl;
+
+        overall_results << results.avg << ", " << results.stdev << ", " << results.max << ", " << results.min;
+        for (size_t value : results.values) {
+            overall_results << ", " << value;
+        }
+        overall_results << "\n";
+    };
+
+    std::cout << "\n\nFor map " << half_dim + "." + idx_str << ":\n";
+    output_results(results.acs, "ACS");
+    output_results(results.acs_dynamic_exploitation, "ACS with dynamic exploitation");
+    output_results(results.acs_mean_filtering, "ACS with mean filtering");
+
+    /************************************\
+     *      Write & Free Heatmaps       *
+    \************************************/
+
+    heatmap::print_heatmaps(pheromone_heatmap_data_1, acs_output,    "pheromone");
+    heatmap::free_heatmaps(pheromone_heatmap_data_1);
+
+    heatmap::print_heatmaps(pheromone_heatmap_data_2, acs_de_output, "pheromone");
+    heatmap::free_heatmaps(pheromone_heatmap_data_2);
+
+    heatmap::print_heatmaps(pheromone_heatmap_data_3, acs_mf_output, "pheromone");
+    heatmap::free_heatmaps(pheromone_heatmap_data_3);
+
+    heatmap::print_heatmaps(ant_count_heatmap_data_1, acs_output,    "ant_count");
+    heatmap::free_heatmaps(ant_count_heatmap_data_1);
+
+    heatmap::print_heatmaps(ant_count_heatmap_data_2, acs_de_output, "ant_count");
+    heatmap::free_heatmaps(ant_count_heatmap_data_2);
+
+    heatmap::print_heatmaps(ant_count_heatmap_data_3, acs_mf_output, "ant_count");
+    heatmap::free_heatmaps(ant_count_heatmap_data_3);
+
+    return results;
 }
 
 int main() {
@@ -349,125 +512,29 @@ int main() {
 
     const std::string output_dir = "/media/data/matthewm/Workspace_Data/Game-AI";
 
-    std::ofstream overall_results = std::ofstream(output_dir + "/results.csv");
+    const size_t test_iterations = 100;
 
-    auto run_test = [output_dir, &overall_results](size_t map_dim, size_t map_idx, size_t iterations = 100) {
-        TestResults results = {
-            {
-                std::vector<size_t>(iterations, 0),
-                0, 0, 0,
-                std::numeric_limits<size_t>::min(),
-                std::numeric_limits<size_t>::max()
-            },
-            {
-                std::vector<size_t>(iterations, 0),
-                0, 0, 0,
-                std::numeric_limits<size_t>::min(),
-                std::numeric_limits<size_t>::max()
-            },
-            {
-                std::vector<size_t>(iterations, 0),
-                0, 0, 0,
-                std::numeric_limits<size_t>::min(),
-                std::numeric_limits<size_t>::max()
-            }
-        };
-        for (size_t i = 0; i < iterations; ++i) {
-            // Only output one of the iterations as a representative case.
-            // IntermediateTestResults it_result = do_acs_comparisons(map_dim,  map_idx, output_dir, true, i == 0);
-            IntermediateTestResults it_result = do_acs_comparisons(map_dim,  map_idx, output_dir, true, false);
-
-            results.acs.values[i]                       = it_result.acs;
-            results.acs.total                          += it_result.acs;
-            results.acs_dynamic_exploitation.values[i]  = it_result.acs_dynamic_exploitation;
-            results.acs_dynamic_exploitation.total     += it_result.acs_dynamic_exploitation;
-            results.acs_mean_filtering.values[i]        = it_result.acs_mean_filtering;
-            results.acs_mean_filtering.total           += it_result.acs_mean_filtering;
-
-            if (results.acs.max < it_result.acs) {
-                results.acs.max = it_result.acs;
-            }
-            if (results.acs_dynamic_exploitation.max < it_result.acs_dynamic_exploitation) {
-                results.acs_dynamic_exploitation.max = it_result.acs_dynamic_exploitation;
-            }
-            if (results.acs_mean_filtering.max < it_result.acs_mean_filtering) {
-                results.acs_mean_filtering.max = it_result.acs_mean_filtering;
-            }
-
-            if (results.acs.min > it_result.acs) {
-                results.acs.min = it_result.acs;
-            }
-            if (results.acs_dynamic_exploitation.min > it_result.acs_dynamic_exploitation) {
-                results.acs_dynamic_exploitation.min = it_result.acs_dynamic_exploitation;
-            }
-            if (results.acs_mean_filtering.min > it_result.acs_mean_filtering) {
-                results.acs_mean_filtering.min = it_result.acs_mean_filtering;
-            }
-        }
-
-        results.acs.avg                      = results.acs.total                      / iterations;
-        results.acs_dynamic_exploitation.avg = results.acs_dynamic_exploitation.total / iterations;
-        results.acs_mean_filtering.avg       = results.acs_mean_filtering.total       / iterations;
-
-        const auto calc_stdev = [](TestResults::ForMethod& results) {
-            size_t avg = results.avg;
-
-            std::vector<size_t> diff(results.values.size());
-            std::transform(
-                results.values.begin(),
-                results.values.end(),
-                diff.begin(),
-                [avg](size_t val) { return val - avg; }
-            );
-            size_t sq_sum = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0);
-
-            results.stdev = std::sqrt(sq_sum / results.values.size());
-        };
-
-        calc_stdev(results.acs);
-        calc_stdev(results.acs_dynamic_exploitation);
-        calc_stdev(results.acs_mean_filtering);
-
-        const auto output_results = [&overall_results](const TestResults::ForMethod& results, std::string method) {
-            std::cout << method << " achieved an ideal solution with:\n"
-                      << "    an average of:      " << results.avg   << " iterations;\n"
-                      << "    a std deviation of: " << results.stdev << " iterations;\n"
-                      << "    a max of:           " << results.max   << " iterations; and,\n"
-                      << "    a min of:           " << results.min   << " iterations." << std::endl;
-
-            overall_results << results.avg << ", " << results.stdev << ", " << results.max << ", " << results.min;
-            for (size_t value : results.values) {
-                overall_results << ", " << value;
-            }
-            overall_results << "\n";
-        };
-
-        output_results(results.acs, "ACS");
-        output_results(results.acs_dynamic_exploitation, "ACS with dynamic exploitation");
-        output_results(results.acs_mean_filtering, "ACS with mean filtering");
-    };
-
-    run_test(51,  0);
-    run_test(51,  1);
-    run_test(51,  2);
-    run_test(51,  3);
-    run_test(51,  4);
-    run_test(51,  5);
-    run_test(51,  6);
-    run_test(51,  7);
-    run_test(51,  8);
-    run_test(51,  9);
-    run_test(51, 10);
-    run_test(51, 11);
-    run_test(51, 12);
-    run_test(51, 13);
-    run_test(51, 14);
-    run_test(51, 15);
-    run_test(51, 16);
-    run_test(51, 17);
-    run_test(51, 18);
-    run_test(51, 19);
-    // run_test(101, 0);
+    do_acs_comparisons(51,  0, output_dir, test_iterations, true);
+    do_acs_comparisons(51,  1, output_dir, test_iterations, true);
+    do_acs_comparisons(51,  2, output_dir, test_iterations, true);
+    do_acs_comparisons(51,  3, output_dir, test_iterations, true);
+    do_acs_comparisons(51,  4, output_dir, test_iterations, true);
+    do_acs_comparisons(51,  5, output_dir, test_iterations, true);
+    do_acs_comparisons(51,  6, output_dir, test_iterations, true);
+    do_acs_comparisons(51,  7, output_dir, test_iterations, true);
+    do_acs_comparisons(51,  8, output_dir, test_iterations, true);
+    do_acs_comparisons(51,  9, output_dir, test_iterations, true);
+    do_acs_comparisons(51, 10, output_dir, test_iterations, true);
+    do_acs_comparisons(51, 11, output_dir, test_iterations, true);
+    do_acs_comparisons(51, 12, output_dir, test_iterations, true);
+    do_acs_comparisons(51, 13, output_dir, test_iterations, true);
+    do_acs_comparisons(51, 14, output_dir, test_iterations, true);
+    do_acs_comparisons(51, 15, output_dir, test_iterations, true);
+    do_acs_comparisons(51, 16, output_dir, test_iterations, true);
+    do_acs_comparisons(51, 17, output_dir, test_iterations, true);
+    do_acs_comparisons(51, 18, output_dir, test_iterations, true);
+    do_acs_comparisons(51, 19, output_dir, test_iterations, true);
+    // do_acs_comparisons(101, 0, output_dir, test_iterations, true);
 
     // do_map_test(101, 0, true, false);
 

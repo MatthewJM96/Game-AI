@@ -170,6 +170,39 @@ void aco::acs::impl::create_ant_count_heatmap_frame(std::string filename, AntCol
     delete[] image_data;
 }
 
+void aco::acs::impl::apply_pheromone_heatmap_frame(AntColony& ant_colony, heatmap::HeatmapData* heatmap_data, size_t heatmap_idx) {
+    map::maze2d::GraphMap& map = ant_colony.map;
+
+    for (auto vertex: boost::make_iterator_range(boost::vertices(map.graph))) {
+        float net_pheromone_into_vertex = 0.0f;
+        for (auto edge: boost::make_iterator_range(boost::in_edges(vertex, map.graph)))
+            net_pheromone_into_vertex += map.edge_weight_map[edge];
+
+        size_t idx = map.vertex_to_map_idx_map[vertex];
+
+        size_t x_coord = 10 *      (idx % ant_colony.options.map_dimensions.x);
+        size_t y_coord = 10 * floor(idx / ant_colony.options.map_dimensions.x);
+
+        heatmap::apply_weighted_point(*heatmap_data, heatmap_idx, x_coord, y_coord, net_pheromone_into_vertex);
+    }
+}
+
+void aco::acs::impl::apply_ant_count_heatmap_frame(AntColony& ant_colony, heatmap::HeatmapData* heatmap_data, size_t heatmap_idx) {
+    for (size_t i = 0; i < ant_colony.options.ant_count; ++i) {
+        Ant& ant = ant_colony.ants[i];
+
+        // If this ant has returned without food, don't show it on the heatmap.
+        if (ant.returned && !ant.has_food) continue;
+
+        size_t idx = ant_colony.map.vertex_to_map_idx_map[ant.current_vertex];
+
+        size_t x_coord = 10 *      (idx % ant_colony.options.map_dimensions.x);
+        size_t y_coord = 10 * floor(idx / ant_colony.options.map_dimensions.x);
+
+        heatmap::apply_point(*heatmap_data, heatmap_idx, x_coord, y_coord);
+    }
+}
+
 void aco::acs::impl::set_new_best_path(Ant& ant, AntColony& ant_colony) {
     // std::cout << "Found new shortest path of length " << std::to_string(ant.path_length) << "." << std::endl;
 
@@ -456,7 +489,12 @@ bool aco::acs::impl::do_ant_next_step(size_t iteration, Ant& ant, AntColony& ant
     return ant.returned;
 }
 
-void aco::acs::impl::do_iteration(size_t iteration, AntColony& ant_colony) {
+void aco::acs::impl::do_iteration(
+    size_t iteration,
+    AntColony& ant_colony,
+    heatmap::HeatmapData* pheromone_heatmap_data,
+    heatmap::HeatmapData* ant_count_heatmap_data
+) {
     /**
      * Reset ants.
      */
@@ -479,13 +517,19 @@ void aco::acs::impl::do_iteration(size_t iteration, AntColony& ant_colony) {
              && (iteration % ant_colony.options.output_frequency.coarse) == 0
                   && (step % ant_colony.options.output_frequency.fine) == 0
         ) {
-            std::string numeric_code = std::to_string(iteration * (2 * ant_colony.options.max_steps) + step);
-            if (numeric_code.size() < 10)
-                numeric_code.insert(0, 10 - numeric_code.size(), '0');
-            std::string file_part = ant_colony.options.output_dir + "/" + numeric_code + "." + ant_colony.options.tag + "." + std::to_string(iteration + 1) + "." + std::to_string(step + 1) + ".acs";
+            size_t idx = iteration * (2 * ant_colony.options.max_steps) + step;
+            if (pheromone_heatmap_data != nullptr) {
+                apply_pheromone_heatmap_frame(ant_colony, pheromone_heatmap_data, idx);
+                apply_ant_count_heatmap_frame(ant_colony, ant_count_heatmap_data, idx);
+            } else {
+                std::string numeric_code = std::to_string(idx);
+                if (numeric_code.size() < 10)
+                    numeric_code.insert(0, 10 - numeric_code.size(), '0');
+                std::string file_part = ant_colony.options.output_dir + "/" + numeric_code + "." + ant_colony.options.tag + "." + std::to_string(iteration + 1) + "." + std::to_string(step + 1) + ".acs";
 
-            create_pheromone_heatmap_frame(file_part + ".pheromone", ant_colony);
-            create_ant_count_heatmap_frame(file_part + ".ant_count", ant_colony);
+                create_pheromone_heatmap_frame(file_part + ".pheromone", ant_colony);
+                create_ant_count_heatmap_frame(file_part + ".ant_count", ant_colony);
+            }
         }
 
         /**
@@ -514,7 +558,12 @@ void aco::acs::impl::do_iteration(size_t iteration, AntColony& ant_colony) {
     }
 }
 
-size_t aco::acs::do_simulation(GraphMap map, ACSOptions options) {
+size_t aco::acs::do_simulation(
+    GraphMap map,
+    ACSOptions options,
+    heatmap::HeatmapData* pheromone_heatmap_data /*= nullptr*/,
+    heatmap::HeatmapData* ant_count_heatmap_data /*= nullptr*/
+) {
     /**
      * Seed RNG.
      */
@@ -545,7 +594,7 @@ size_t aco::acs::do_simulation(GraphMap map, ACSOptions options) {
      */
     size_t iteration = 0;
     for (; iteration < options.iterations; ++iteration) {
-        impl::do_iteration(iteration, ant_colony);
+        impl::do_iteration(iteration, ant_colony, pheromone_heatmap_data, ant_count_heatmap_data);
 
         if (ant_colony.shortest_path.length <= options.target_best_path_length)
             break;

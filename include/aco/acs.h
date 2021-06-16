@@ -6,6 +6,7 @@
 #include <random>
 
 #include "dimension.hpp"
+#include "heatmap.h"
 #include "map/maze2d.h"
 
 namespace aco {
@@ -66,7 +67,12 @@ namespace aco {
             size_t back_step_counter = 0;
         };
 
-        size_t do_simulation(GraphMap map, ACSOptions options);
+        size_t do_simulation(
+            GraphMap map,
+            ACSOptions options,
+            heatmap::HeatmapData* pheromone_heatmap_data = nullptr,
+            heatmap::HeatmapData* ant_count_heatmap_data = nullptr
+        );
 
         namespace impl {
             static std::default_random_engine            generator;
@@ -86,13 +92,22 @@ namespace aco {
 
             inline void create_ant_count_heatmap_frame(std::string filename, AntColony& ant_colony);
 
+            inline void apply_pheromone_heatmap_frame(AntColony& ant_colony, heatmap::HeatmapData* heatmap_data, size_t heatmap_idx);
+
+            inline void apply_ant_count_heatmap_frame(AntColony& ant_colony, heatmap::HeatmapData* heatmap_data, size_t heatmap_idx);
+
             inline void set_new_best_path(Ant& ant, AntColony& ant_colony);
 
             inline VertexDescriptor choose_next_vertex(size_t iteration, Ant& ant, AntColony& ant_colony);
 
             inline bool do_ant_next_step(size_t iteration, Ant& ant, AntColony& ant_colony);
 
-            inline void do_iteration(size_t iteration, AntColony& ant_colony);
+            inline void do_iteration(
+                size_t iteration,
+                AntColony& ant_colony,
+                heatmap::HeatmapData* heatmap_data,
+                heatmap::HeatmapData* ant_count_heatmap_data
+            );
         };
     };
 };
